@@ -1,0 +1,22 @@
+{
+  "name": "com.mrtorex.logline",
+  "version": "0.0.1-dev",
+  "displayName": "LogLine",
+  "description": "High-performance, zero-allocation, user-friendly logging framework for Unity",
+  "unity": "2022.3",
+  "license": "MIT",
+  "keywords": [
+    "logging",
+    "logger",
+    "zero-alloc",
+    "zero-allocation",
+    "performance",
+    "utility",
+    "async",
+    "user-friendly"
+  ],
+  "author": {
+    "name": "Alaksiej Cevialuk (MrTorex)",
+    "url": "https://github.com/MrTorex"
+  }
+}

@@ -1,0 +1,191 @@
+# ======================================
+# UNITY - MAIN IGNORED FOLDERS
+# ======================================
+
+# Auto-generated Unity folders
+
+# Unity cache and temporary files
+/[Ll]ibrary/
+# Temporary compilation files
+/[Tt]emp/
+# Compiled object files
+/[Oo]bj/
+# Project builds
+/[Bb]uild/
+# Additional builds
+/[Bb]uilds/
+# Unity logs
+/[Ll]ogs/
+# User-specific settings
+/[Uu]ser[Ss]ettings/
+# Unity temporary files
+.utmp/
+
+# Log files
+*.log
+
+# Blender files (backups)
+*.blend1
+*.blend1.meta
+
+# Memory captures and recordings (can be very large)
+
+# Memory dumps (may contain sensitive data)
+/[Mm]emoryCaptures/
+# Recordings (can take a lot of space)
+/[Rr]ecordings/
+
+# Auto-generated Rider plugins
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# ======================================
+# BUILD AND PACKAGE FILES
+# ======================================
+
+# Ready-made builds and packages
+
+# Android app
+*.apk
+
+# Android App Bundle
+*.aab
+
+# Asset Store package
+*.unitypackage
+
+# Meta files for packages
+*.unitypackage.meta
+
+# macOS application
+*.app
+
+# Windows application
+*.exe
+
+# Addressables
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/ServerData
+/[Aa]ssets/StreamingAssets/aa*
+/[Aa]ssets/AddressableAssetsData/link.xml*
+/[Aa]ssets/Addressables_Temp*
+
+# Temporary Android Assets
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# ======================================
+# VISUAL STUDIO / RIDER / VS CODE
+# ======================================
+
+# Visual Studio
+
+# Visual Studio cache
+.vs/
+# C# project files
+*.csproj
+# Solution file
+*.sln
+# Solution user settings
+*.suo
+# Project user settings
+*.user
+# User preferences
+*.userprefs
+*.userosscache
+*.rsuser
+
+# JetBrains Rider
+
+# All Rider files
+.idea/
+# Module files
+*.iml
+# Project files
+*.ipr
+# Workspace files
+*.iws
+# Rider personal settings
+*.DotSettings.user
+
+# VS Code
+
+# All VS Code settings
+.vscode/
+# Ignore workspaces
+*.code-workspace
+# Ignore installed extensions
+*.vsix
+
+# ======================================
+# DEVELOPMENT ENVIRONMENT UTILITIES
+# ======================================
+
+# Common temporary files
+
+# MonoDevelop debug database
+*.pidb
+# Program database
+*.pdb
+# Mono debugging database
+*.mdb
+# Open database
+*.opendb
+# Visual C++ database
+*.VC.db
+*.booproj
+*.svd
+*.tmp
+*.unityproj
+
+# Mono crash files
+mono_crash.*
+
+# Report and system information files
+
+# System information on crashes
+sysinfo.txt
+
+# ======================================
+# META FILES
+# ======================================
+
+# Ignore only meta files for temporary files
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# ======================================
+# TESTS AND VISUAL SCRIPTING
+# ======================================
+
+# TestRunner files
+InitTestScene*.unity*
+
+# Auto-generated test scenes
+/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Visual Scripting auto-generated files
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
+/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
+
+# ======================================
+# ADDITIONAL SETTINGS
+# ======================================
+
+# Gradle (for Android builds)
+.gradle/
+
+# Other auto-generated files
+ExportedObj/
+.consulo/
+
+# Crashlytics
+crashlytics-build.properties
+
+# UI Toolkit
+/UIElementsSchema/
+
+# Auto-generated cache in the Assets folder
+/[Aa]ssets/[Ss]ceneDependencyCache*

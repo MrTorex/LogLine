@@ -1,0 +1,18 @@
+{
+  "name": "LogLine.Editor",
+  "rootNamespace": "LogLine.Editor",
+  "references": [
+    "GUID:a87e662fb5bf45aeb8feb44c1c27de90"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

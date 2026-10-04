@@ -1,0 +1,182 @@
+# Root editorconfig file for Unity project
+root = true
+
+# ==============================================================================
+# GLOBAL RULES
+# ==============================================================================
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ==============================================================================
+# MARKDOWN
+# ==============================================================================
+[*.md]
+indent_size = 2
+trim_trailing_whitespace = false
+
+# ==============================================================================
+# CONFIGS, JSON & ASSEMBLY DEFINITIONS
+# ==============================================================================
+[*.{json,json5,asmdef,asmref}]
+indent_size = 2
+
+# ==============================================================================
+# UNITY YAML, METAS & SCENES
+# Prevent external formatters from corrupting Unity serialization layout
+# ==============================================================================
+[*.{meta,unity,prefab,asset,mat,anim,controller,overrideController,preset,physicMaterial,physicsMaterial2D,guiskin,fontsettings,mask,terrainlayer,brush}]
+indent_size = 2
+trim_trailing_whitespace = false
+
+[*.{yaml,yml}]
+indent_size = 2
+
+# ==============================================================================
+# C# CODE STYLES & CONVENTIONS
+# ==============================================================================
+[*.cs]
+# Inherits indent_style = space and indent_size = 4 from [*]
+
+# --- Using directives placement & sorting ---
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_preserve_single_line_blocks = true
+
+# --- Braces layout (Allman) & new lines ---
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# --- Spacing ---
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_before_parenthesis_in_control_flow_statements = true
+csharp_space_between_parentheses = false
+csharp_space_between_empty_square_brackets = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_around_binary_operators = before_and_after
+
+# --- Namespace scoping ---
+csharp_style_namespace_declarations = block_scoped:suggestion
+
+# --- Var preferences ---
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# --- Modern C# features ---
+csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_prefer_tuple_swap = true:suggestion
+csharp_style_throw_expression = true:suggestion
+csharp_style_null_propagation = true:suggestion
+csharp_style_prefer_conditional_delegate_call = true:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+
+# --- Expression-bodied members ---
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_constructors = false:suggestion
+csharp_style_expression_bodied_operators = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = when_on_single_line:suggestion
+csharp_style_expression_bodied_indexers = when_on_single_line:suggestion
+csharp_style_expression_bodied_accessors = when_on_single_line:suggestion
+csharp_style_expression_bodied_lambdas = true:suggestion
+csharp_style_expression_bodied_local_functions = when_on_single_line:suggestion
+
+# --- Modifiers ---
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:suggestion
+
+# ==============================================================================
+# NAMING CONVENTIONS
+# ==============================================================================
+
+# 1. Constants: PascalCase
+dotnet_naming_rule.constants_rule.symbols = constant_symbols
+dotnet_naming_rule.constants_rule.style = pascal_case_style
+dotnet_naming_rule.constants_rule.severity = warning
+
+dotnet_naming_symbols.constant_symbols.applicable_kinds = field, local
+dotnet_naming_symbols.constant_symbols.required_modifiers = const
+
+# 2. Interfaces: IName
+dotnet_naming_rule.interface_rule.symbols = interface_symbols
+dotnet_naming_rule.interface_rule.style = interface_style
+dotnet_naming_rule.interface_rule.severity = warning
+
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.interface_style.capitalization = pascal_case
+dotnet_naming_style.interface_style.required_prefix = I
+
+# 3. Types (classes, structs, enums, delegates): Name
+dotnet_naming_rule.types_rule.symbols = type_symbols
+dotnet_naming_rule.types_rule.style = pascal_case_style
+dotnet_naming_rule.types_rule.severity = warning
+
+dotnet_naming_symbols.type_symbols.applicable_kinds = class, struct, enum, delegate
+
+# 4. Type Parameters: T or TContext
+dotnet_naming_rule.type_parameter_rule.symbols = type_parameter_symbols
+dotnet_naming_rule.type_parameter_rule.style = type_parameter_style
+dotnet_naming_rule.type_parameter_rule.severity = warning
+
+dotnet_naming_symbols.type_parameter_symbols.applicable_kinds = type_parameter
+dotnet_naming_style.type_parameter_style.capitalization = pascal_case
+dotnet_naming_style.type_parameter_style.required_prefix = T
+
+# 5. Methods, properties, events: PascalCase
+dotnet_naming_rule.members_rule.symbols = member_symbols
+dotnet_naming_rule.members_rule.style = pascal_case_style
+dotnet_naming_rule.members_rule.severity = warning
+
+dotnet_naming_symbols.member_symbols.applicable_kinds = property, method, event
+
+# 6. Standard private and protected fields: _camelCase
+dotnet_naming_rule.private_fields_rule.symbols = private_field_symbols
+dotnet_naming_rule.private_fields_rule.style = private_field_style
+dotnet_naming_rule.private_fields_rule.severity = warning
+
+dotnet_naming_symbols.private_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private, protected
+
+# 7. Public fields (structs, DTOs): PascalCase
+dotnet_naming_rule.public_fields_rule.symbols = public_field_symbols
+dotnet_naming_rule.public_fields_rule.style = pascal_case_style
+dotnet_naming_rule.public_fields_rule.severity = warning
+
+dotnet_naming_symbols.public_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.public_field_symbols.applicable_accessibilities = public, internal
+
+# 8. Parameters and local variables: camelCase
+dotnet_naming_rule.parameters_and_locals_rule.symbols = parameter_and_local_symbols
+dotnet_naming_rule.parameters_and_locals_rule.style = camel_case_style
+dotnet_naming_rule.parameters_and_locals_rule.severity = warning
+
+dotnet_naming_symbols.parameter_and_local_symbols.applicable_kinds = parameter, local
+
+# --- Naming Styles Definitions ---
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+dotnet_naming_style.camel_case_style.capitalization = camel_case
+dotnet_naming_style.private_field_style.capitalization = camel_case
+dotnet_naming_style.private_field_style.required_prefix = _
+
+# ==============================================================================
+# JETBRAINS RIDER SPECIFIC
+# ==============================================================================
+resharper_csharp_naming_rule_unity_serialized_field = camelCase
+resharper_unity_serialized_field_naming_rule = camelCase
+resharper_csharp_type_parameters_naming_style = TPascalCase
+resharper_csharp_private_field_prefix = _
