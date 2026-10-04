@@ -42,7 +42,7 @@ Any PR introducing features/refactors/etc. must work properly and pass all tests
 ## How to Contribute
 
 ### 1. Reporting Bugs and Issues
-* Check the existing [Issues](../../issues) to verify the problem hasn't already been reported.
+* Check the existing [Issues](https://github.com/MrTorex/LogLine/issues) to verify the problem hasn't already been reported.
 * Use the provided **Issue Templates**.
 * Be clear, concise, and technical.
 
