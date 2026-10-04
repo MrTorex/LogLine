@@ -1,0 +1,56 @@
+name: Feature Request
+description: Propose a new feature, architecture enhancement, or performance improvement
+title: "[FEAT]: "
+labels: ["type: feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve LogLine!
+        Check existing issues to make sure this feature hasn't been requested already.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Target Area
+      description: Which part of LogLine does this feature target?
+      options:
+        - "area: core (Engine, Buffering, etc.)"
+        - "area: sinks (Console, File, etc.)"
+        - "area: editor (UI Toolkit Dashboard, Settings, etc.)"
+        - "area: engine (Unity compatibility)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Motivation
+      description: Is this feature related to a specific problem or missing workflow?
+      placeholder: "I am frustrated when trying to log to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution / API Design
+      description: Describe your proposed architecture or API syntax (pseudo-code welcome).
+      placeholder: |
+        LogLine.AddSink(new SuperCoolSink("url"));
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative implementations or existing libraries you've considered.
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: "I am willing to submit a Pull Request implementing this feature."
+          required: false

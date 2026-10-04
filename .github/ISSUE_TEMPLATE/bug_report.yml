@@ -1,0 +1,97 @@
+name: Bug Report
+description: Report a defect, crash, or unexpected behavior in LogLine
+title: "[BUG]: "
+labels: ["type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue!
+        Please verify that the bug hasn't already been reported in existing issues.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what went wrong.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: unity-version
+    attributes:
+      label: Unity Version
+      description: What version of Unity are you experiencing this issue on? Please specify subversion in details.
+      options:
+        - "Unity 2022.3 LTS"
+        - "Unity 6.0 LTS"
+        - "Unity 6.3 LTS"
+        - "Other (specify in details)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scripting-backend
+    attributes:
+      label: Scripting Backend
+      description: Target scripting backend used during reproduction.
+      options:
+        - "Mono"
+        - "IL2CPP"
+        - "CoreCLR"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Operating System / Platform
+      description: Environment where the bug occurred.
+      options:
+        - "Linux Editor"
+        - "Windows Editor"
+        - "macOS Editor"
+        - "Linux Standalone"
+        - "Windows Standalone"
+        - "macOS Standalone"
+        - "Android"
+        - "iOS"
+        - "Other / Consoles"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps To Reproduce
+      description: Step-by-step instructions to reproduce the behavior.
+      placeholder: |
+        1. Initialize LogLine with '...'
+        2. Attach sink '...'
+        3. Call 'LogLine.Info(...)'
+        4. See error/unexpected output
+    validations:
+      required: true
+
+  - type: textarea
+    id: stacktrace
+    attributes:
+      label: Console Output / Stacktrace
+      description: Paste any error messages, logs, or callstacks here.
+      render: text
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Specify any additional details here.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Additional Checks
+      options:
+        - label: "I have tested this with Domain Reload both enabled and disabled."
+          required: false
+        - label: "This issue reproduces in a clean reproduction project."
+          required: false
