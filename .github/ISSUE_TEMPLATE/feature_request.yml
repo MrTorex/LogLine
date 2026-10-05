@@ -19,6 +19,7 @@ body:
         - "area: sinks (Console, File, etc.)"
         - "area: editor (UI Toolkit Dashboard, Settings, etc.)"
         - "area: engine (Unity compatibility)"
+        - "area: other (Docs, releases, etc.)"
     validations:
       required: true
 
