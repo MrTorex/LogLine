@@ -5,12 +5,13 @@ using System.Text;
 using System.Threading;
 using LogLine.Buffering;
 using LogLine.Core;
+using LogLine.Layouts;
 
 namespace LogLine.Sinks
 {
     /// <summary>
     /// Asynchronous file sink writing batches to persistent disk streams via a lock-free background pipeline.
-    /// Supports automatic file rotation and zero-allocation stack formatting.
+    /// Serializes log events via <see cref="ILogLayout"/> with zero-allocation buffers.
     /// </summary>
     public sealed class AsyncFileSink : ILogSink
     {
@@ -50,6 +51,11 @@ namespace LogLine.Sinks
         public LogLevel MinimumLevel { get; set; } = LogLevel.Trace;
 
         /// <summary>
+        /// Gets or sets the active layout used to format events written to disk.
+        /// </summary>
+        public ILogLayout Layout { get; set; }
+
+        /// <summary>
         /// Gets or sets the maximum size in bytes before the log file is rotated. Default is 10 MB.
         /// </summary>
         public long MaxFileSizeBytes { get; set; } = 10 * 1024 * 1024;
@@ -59,11 +65,6 @@ namespace LogLine.Sinks
         /// </summary>
         public int MaxArchiveFiles { get; set; } = 3;
 
-        /// <summary>
-        /// Gets or sets a value indicating whether UTC time is used instead of local system time.
-        /// </summary>
-        public bool UseUtcTime { get; set; } = false;
-
         #endregion
 
         #region Construction
@@ -72,10 +73,12 @@ namespace LogLine.Sinks
         /// Initializes a new instance of the <see cref="AsyncFileSink"/> class.
         /// </summary>
         /// <param name="filePath">Target log file path.</param>
+        /// <param name="layout">Custom layout. If null, standard file pattern layout is used.</param>
         /// <param name="ringBufferCapacity">Capacity of the internal ring buffer.</param>
-        public AsyncFileSink(string filePath, int ringBufferCapacity = 4096)
+        public AsyncFileSink(string filePath, ILogLayout layout = null, int ringBufferCapacity = 4096)
         {
             _baseFilePath = filePath;
+            Layout = layout ?? new PatternLayout(PatternLayout.DefaultFilePattern, useColorTags: false);
             _ringBuffer = new LogRingBuffer(ringBufferCapacity);
 
             EnsureDirectoryExists(_baseFilePath);
@@ -104,7 +107,6 @@ namespace LogLine.Sinks
 
             if (_ringBuffer.TryEnqueue(in logEvent))
             {
-                // Signal worker thread if queue was idle
                 _signal.Set();
             }
         }
@@ -120,7 +122,6 @@ namespace LogLine.Sinks
 
             if (_workerThread is { IsAlive: true })
             {
-                // Wait briefly for worker to flush all remaining entries
                 _workerThread.Join(1500);
             }
 
@@ -142,7 +143,6 @@ namespace LogLine.Sinks
                 DrainQueue(formatBuffer);
             }
 
-            // Final drain on application shutdown
             DrainQueue(formatBuffer);
         }
 
@@ -153,7 +153,6 @@ namespace LogLine.Sinks
             bool hasEntries = false;
             bool forceFlush = false;
 
-            // Check if items were dropped due to buffer saturation
             int currentDropped = _ringBuffer.DroppedCount;
             if (currentDropped > _lastLoggedDroppedCount)
             {
@@ -166,10 +165,7 @@ namespace LogLine.Sinks
             while (_ringBuffer.TryDequeue(out LogEvent logEvent))
             {
                 hasEntries = true;
-
-                // Rotate file if current stream exceeds configured size limit
                 CheckFileRotation();
-
                 WriteLogEvent(ref formatBuffer, in logEvent);
 
                 if (logEvent.Level >= LogLevel.Error)
@@ -184,67 +180,39 @@ namespace LogLine.Sinks
                 {
                     _writer.Flush();
                 }
-                else
-                {
-                    // Periodic non-forced flush to ensure data lands in OS buffers
-                    _writer.Flush();
-                }
             }
         }
 
         private void WriteLogEvent(ref Span<char> formatBuffer, in LogEvent logEvent)
         {
-            var writer = new FastFileWriter(formatBuffer);
+            if (Layout == null) return;
+
+            // Fast path: layout fits into stack buffer
+            if (Layout.TryFormat(in logEvent, formatBuffer, out int charsWritten))
+            {
+                _writer.Write(formatBuffer[..charsWritten]);
+                return;
+            }
+
+            // Slow path: large event, rent from pool
+            int poolSize = formatBuffer.Length * 2;
+            char[] rented = ArrayPool<char>.Shared.Rent(poolSize);
             try
             {
-                DateTime time = UseUtcTime ? logEvent.TimestampUtc : logEvent.TimestampUtc.ToLocalTime();
-
-                // Format: YYYY-MM-DD HH:MM:SS.FFF [LEVEL] [Category] Message
-                writer.AppendFourDigits(time.Year);
-                writer.Append('-');
-                writer.AppendTwoDigits(time.Month);
-                writer.Append('-');
-                writer.AppendTwoDigits(time.Day);
-                writer.Append(' ');
-                writer.AppendTwoDigits(time.Hour);
-                writer.Append(':');
-                writer.AppendTwoDigits(time.Minute);
-                writer.Append(':');
-                writer.AppendTwoDigits(time.Second);
-                writer.Append('.');
-                writer.AppendThreeDigits(time.Millisecond);
-
-                writer.Append(" [");
-                writer.Append(GetLevelString(logEvent.Level));
-                writer.Append("] [");
-                writer.Append(logEvent.LoggerName);
-                writer.Append("] ");
-                writer.Append(logEvent.Message);
-
-                if (logEvent.HasException)
+                while (!Layout.TryFormat(in logEvent, rented, out charsWritten))
                 {
-                    writer.Append("\n--> Exception: ");
-                    writer.Append(logEvent.Exception.ToString());
+                    poolSize *= 2;
+                    ArrayPool<char>.Shared.Return(rented);
+                    rented = ArrayPool<char>.Shared.Rent(poolSize);
                 }
 
-                _writer.WriteLine(writer.AsSpan());
+                _writer.Write(rented.AsSpan(0, charsWritten));
             }
             finally
             {
-                writer.Dispose();
+                ArrayPool<char>.Shared.Return(rented);
             }
         }
-
-        private static string GetLevelString(LogLevel level) => level switch
-        {
-            LogLevel.Trace => "TRACE",
-            LogLevel.Debug => "DEBUG",
-            LogLevel.Info  => "INFO",
-            LogLevel.Warn  => "WARN",
-            LogLevel.Error => "ERROR",
-            LogLevel.Fatal => "FATAL",
-            _ => "LOG"
-        };
 
         #endregion
 
@@ -293,7 +261,6 @@ namespace LogLine.Sinks
 
             try
             {
-                // Shift existing rotated archive files: file.2 -> file.3, file.1 -> file.2, etc.
                 for (int i = MaxArchiveFiles - 1; i >= 1; i--)
                 {
                     string oldPath = $"{_baseFilePath}.{i}";
@@ -321,98 +288,6 @@ namespace LogLine.Sinks
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
-            }
-        }
-
-        #endregion
-
-        #region Fast Formatting Buffer
-
-        private ref struct FastFileWriter
-        {
-            private char[] _rented;
-            private Span<char> _buffer;
-            private int _pos;
-
-            public FastFileWriter(Span<char> initialBuffer)
-            {
-                _rented = null;
-                _buffer = initialBuffer;
-                _pos = 0;
-            }
-
-            public void Append(char c)
-            {
-                if (_pos >= _buffer.Length) Grow(1);
-                _buffer[_pos++] = c;
-            }
-
-            public void Append(string str)
-            {
-                if (string.IsNullOrEmpty(str)) return;
-                Append(str.AsSpan());
-            }
-
-            public void Append(ReadOnlySpan<char> span)
-            {
-                if (span.IsEmpty) return;
-                if (_pos + span.Length > _buffer.Length) Grow(span.Length);
-
-                span.CopyTo(_buffer[_pos..]);
-                _pos += span.Length;
-            }
-
-            public void AppendTwoDigits(int val)
-            {
-                if (_pos + 2 > _buffer.Length) Grow(2);
-                int clamped = (uint)val < 100 ? val : 99;
-                _buffer[_pos++] = (char)('0' + clamped / 10);
-                _buffer[_pos++] = (char)('0' + clamped % 10);
-            }
-
-            public void AppendThreeDigits(int val)
-            {
-                if (_pos + 3 > _buffer.Length) Grow(3);
-                int clamped = (uint)val < 1000 ? val : 999;
-                _buffer[_pos++] = (char)('0' + clamped / 100);
-                _buffer[_pos++] = (char)('0' + clamped / 10 % 10);
-                _buffer[_pos++] = (char)('0' + clamped % 10);
-            }
-
-            public void AppendFourDigits(int val)
-            {
-                if (_pos + 4 > _buffer.Length) Grow(4);
-                _buffer[_pos++] = (char)('0' + val / 1000);
-                _buffer[_pos++] = (char)('0' + val / 100 % 10);
-                _buffer[_pos++] = (char)('0' + val / 10 % 10);
-                _buffer[_pos++] = (char)('0' + val % 10);
-            }
-
-            public ReadOnlySpan<char> AsSpan() => _buffer[.._pos];
-
-            public void Dispose()
-            {
-                if (_rented != null)
-                {
-                    ArrayPool<char>.Shared.Return(_rented);
-                    _rented = null;
-                }
-            }
-
-            private void Grow(int minRequired)
-            {
-                int newCap = Math.Max(_buffer.Length * 2, _pos + minRequired);
-                char[] rented = ArrayPool<char>.Shared.Rent(newCap);
-
-                _buffer[.._pos].CopyTo(rented);
-
-                if (_rented != null)
-                {
-                    ArrayPool<char>.Shared.Return(_rented);
-                }
-
-                _rented = rented;
-                _buffer = rented;
             }
         }
 

@@ -3,6 +3,7 @@ using System.IO;
 using LogLine.Config;
 using LogLine.Core;
 using LogLine.Interceptors;
+using LogLine.Layouts;
 using LogLine.Sinks;
 using UnityEngine;
 using ILogger = LogLine.Core.ILogger;
@@ -76,31 +77,42 @@ namespace LogLine
 
                 if (settings != null)
                 {
-                    LogLineCore.GlobalMinimumLevel = settings.GlobalMinimumLevel;
+                    LogLineCore.GlobalMinimumLevel = settings.globalMinimumLevel;
 
-                    if (settings.EnableConsoleLogging)
+                    if (settings.enableConsoleLogging)
                     {
-                        LogLineCore.AddSink(new UnityConsoleSink
+                        string consolePattern = string.IsNullOrEmpty(settings.consolePattern)
+                            ? PatternLayout.DefaultConsolePattern
+                            : settings.consolePattern;
+
+                        var consoleLayout = new PatternLayout(consolePattern, settings.consoleUseColorTags);
+
+                        LogLineCore.AddSink(new UnityConsoleSink(consoleLayout)
                         {
-                            MinimumLevel = settings.ConsoleMinimumLevel,
-                            UseColorTags = settings.ConsoleUseColorTags
+                            MinimumLevel = settings.consoleMinimumLevel
                         });
                     }
 
-                    if (settings.EnableFileLogging)
+                    if (settings.enableFileLogging)
                     {
                         string logDirectory = Path.Combine(Application.persistentDataPath, "Logs");
-                        string fullPath = Path.Combine(logDirectory, settings.FileName);
+                        string fullPath = Path.Combine(logDirectory, settings.fileName);
 
-                        LogLineCore.AddSink(new AsyncFileSink(fullPath)
+                        string filePattern = string.IsNullOrEmpty(settings.filePattern)
+                            ? PatternLayout.DefaultFilePattern
+                            : settings.filePattern;
+
+                        var fileLayout = new PatternLayout(filePattern, useColorTags: false);
+
+                        LogLineCore.AddSink(new AsyncFileSink(fullPath, fileLayout)
                         {
-                            MinimumLevel = settings.FileMinimumLevel,
-                            MaxFileSizeBytes = settings.MaxFileSizeBytes,
-                            MaxArchiveFiles = settings.MaxArchiveFiles
+                            MinimumLevel = settings.fileMinimumLevel,
+                            MaxFileSizeBytes = settings.maxFileSizeBytes,
+                            MaxArchiveFiles = settings.maxArchiveFiles
                         });
                     }
 
-                    if (settings.InterceptUnityLogs)
+                    if (settings.interceptUnityLogs)
                     {
                         _interceptor = new UnityLogInterceptor();
                     }

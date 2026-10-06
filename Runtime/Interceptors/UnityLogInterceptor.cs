@@ -7,7 +7,7 @@ namespace LogLine.Interceptors
     /// <summary>
     /// Intercepts native Unity <see cref="Debug.Log(object)"/> invocations and redirects them into LogLine.
     /// </summary>
-    public sealed class UnityLogInterceptor : ILogHandler, IDisposable
+    internal sealed class UnityLogInterceptor : ILogHandler, IDisposable
     {
         #region Private Fields
 

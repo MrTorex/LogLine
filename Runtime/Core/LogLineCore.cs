@@ -9,7 +9,7 @@ namespace LogLine.Core
     /// Internal engine for sink management, logger resolution, and zero-allocation dispatching.
     /// Not accessible directly outside the assembly; use <see cref="LogLine"/> facade.
     /// </summary>
-    public static class LogLineCore
+    internal static class LogLineCore
     {
         #region Private Fields
 
@@ -20,8 +20,6 @@ namespace LogLine.Core
 
         // Cache of all active logger instances organized by category name.
         private static readonly ConcurrentDictionary<string, Logger> _loggers = new(StringComparer.OrdinalIgnoreCase);
-
-        // Prevents circular recursion if a sink invokes Unity's Debug.Log during dispatch.
 
         #endregion
 
@@ -146,8 +144,9 @@ namespace LogLine.Core
             ILogSink[] oldSinks = _activeSinks;
             _activeSinks = Array.Empty<ILogSink>();
 
-            foreach (ILogSink t in oldSinks)
+            for (int i = 0; i < oldSinks.Length; i++)
             {
+                ILogSink t = oldSinks[i];
                 try
                 {
                     t?.Dispose();
@@ -385,8 +384,9 @@ namespace LogLine.Core
             IsDispatching = true;
             try
             {
-                foreach (ILogSink sink in sinks)
+                for (int i = 0; i < sinks.Length; i++)
                 {
+                    ILogSink sink = sinks[i];
                     if (!sink.IsEnabled || logEvent.Level < sink.MinimumLevel)
                     {
                         continue;
