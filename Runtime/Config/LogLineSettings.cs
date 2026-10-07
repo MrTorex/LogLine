@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LogLine.Core;
+using LogLine.Layouts;
 using UnityEngine;
 
 namespace LogLine.Config
@@ -15,30 +16,36 @@ namespace LogLine.Config
 
         [Header("Global Settings")]
         [Tooltip("Default fallback minimum log level across all unconfigured loggers.")]
-        public LogLevel GlobalMinimumLevel = LogLevel.Trace;
+        public LogLevel globalMinimumLevel = LogLevel.Trace;
 
         [Tooltip("Automatically capture and redirect native Unity Debug.Log calls into the LogLine pipeline.")]
-        public bool InterceptUnityLogs = true;
+        public bool interceptUnityLogs = true;
 
         #endregion
 
         #region Console Sink Settings
 
         [Header("Unity Console Sink")]
-        public bool EnableConsoleLogging = true;
-        public LogLevel ConsoleMinimumLevel = LogLevel.Trace;
-        public bool ConsoleUseColorTags = true;
+        public bool enableConsoleLogging = true;
+        public LogLevel consoleMinimumLevel = LogLevel.Trace;
+        public bool consoleUseColorTags = true;
+
+        [Tooltip("Pattern template for Unity Console. Example: [%d{HH:mm:ss.fff}] [%p] [%c]: %m%ex")]
+        public string consolePattern = PatternLayout.DefaultConsolePattern;
 
         #endregion
 
         #region File Sink Settings
 
         [Header("Async File Sink")]
-        public bool EnableFileLogging = true;
-        public LogLevel FileMinimumLevel = LogLevel.Debug;
-        public string FileName = "game.log";
-        public long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
-        public int MaxArchiveFiles = 3;
+        public bool enableFileLogging = true;
+        public LogLevel fileMinimumLevel = LogLevel.Debug;
+        public string fileName = "game.log";
+        public long maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
+        public int maxArchiveFiles = 3;
+
+        [Tooltip("Pattern template for log files. Example: %d{yyyy-MM-dd HH:mm:ss.fff} [%p] [%c] %m%ex%n")]
+        public string filePattern = PatternLayout.DefaultFilePattern;
 
         #endregion
 
@@ -46,7 +53,7 @@ namespace LogLine.Config
 
         [Header("Category Rules")]
         [Tooltip("Rules applied by category prefix matching (e.g. 'Network', 'Combat.AI').")]
-        public List<CategoryRule> CategoryRules = new();
+        public List<CategoryRule> categoryRules = new();
 
         #endregion
 
@@ -60,11 +67,11 @@ namespace LogLine.Config
         /// <returns>The resolved <see cref="LogLevel"/>.</returns>
         public LogLevel ResolveLevelForCategory(string category)
         {
-            if (CategoryRules != null && !string.IsNullOrEmpty(category))
+            if (categoryRules != null && !string.IsNullOrEmpty(category))
             {
-                for (int i = 0; i < CategoryRules.Count; i++)
+                for (int i = 0; i < categoryRules.Count; i++)
                 {
-                    var rule = CategoryRules[i];
+                    CategoryRule rule = categoryRules[i];
                     if (!string.IsNullOrEmpty(rule.CategoryPrefix) &&
                         category.StartsWith(rule.CategoryPrefix, StringComparison.OrdinalIgnoreCase))
                     {
@@ -73,7 +80,7 @@ namespace LogLine.Config
                 }
             }
 
-            return GlobalMinimumLevel;
+            return globalMinimumLevel;
         }
 
         #endregion
