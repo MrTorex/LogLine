@@ -52,7 +52,7 @@ namespace LogLine.Config
         #region Category Overrides
 
         [Header("Category Rules")]
-        [Tooltip("Rules applied by category prefix matching (e.g. 'Network', 'Combat.AI').")]
+        [Tooltip("Rules applied by longest matching category prefix (e.g. 'Network', 'Network.Packets').")]
         public List<CategoryRule> categoryRules = new();
 
         #endregion
@@ -60,7 +60,7 @@ namespace LogLine.Config
         #region Resolution API
 
         /// <summary>
-        /// Resolves the effective log level for a given category name based on registered prefix rules.
+        /// Resolves the effective log level for a given category name using longest-prefix matching.
         /// Executed only upon logger creation or re-configuration.
         /// </summary>
         /// <param name="category">The category name to resolve.</param>
@@ -69,14 +69,29 @@ namespace LogLine.Config
         {
             if (categoryRules != null && !string.IsNullOrEmpty(category))
             {
+                int bestMatchLength = -1;
+                LogLevel resolvedLevel = globalMinimumLevel;
+
                 for (int i = 0; i < categoryRules.Count; i++)
                 {
                     CategoryRule rule = categoryRules[i];
-                    if (!string.IsNullOrEmpty(rule.CategoryPrefix) &&
+                    if (string.IsNullOrEmpty(rule.CategoryPrefix))
+                    {
+                        continue;
+                    }
+
+                    int prefixLength = rule.CategoryPrefix.Length;
+                    if (prefixLength > bestMatchLength &&
                         category.StartsWith(rule.CategoryPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        return rule.MinimumLevel;
+                        bestMatchLength = prefixLength;
+                        resolvedLevel = rule.MinimumLevel;
                     }
+                }
+
+                if (bestMatchLength >= 0)
+                {
+                    return resolvedLevel;
                 }
             }
 
@@ -90,7 +105,7 @@ namespace LogLine.Config
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (Application.isPlaying)
+            if (Application.isPlaying && LogLine.Settings == this)
             {
                 LogLine.ApplySettings(this);
             }
