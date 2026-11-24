@@ -46,6 +46,16 @@ namespace LogLine.Sinks
         public override string Name => "AsyncFile";
 
         /// <summary>
+        /// Gets the raw file path template passed to this sink before macro expansion.
+        /// </summary>
+        public string FilePathTemplate { get; }
+
+        /// <summary>
+        /// Gets the fully resolved absolute file path currently written to by this sink.
+        /// </summary>
+        public string ResolvedFilePath => _baseFilePath;
+
+        /// <summary>
         /// Gets or sets the active layout used to format events written to disk.
         /// </summary>
         public ILogLayout Layout { get; set; }
@@ -66,13 +76,19 @@ namespace LogLine.Sinks
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncFileSink"/> class.
+        /// Resolves any path macros and date tokens once during construction.
         /// </summary>
-        /// <param name="filePath">Target log file path.</param>
+        /// <param name="filePath">
+        /// Target log file path or macro template (e.g. <c>"{persistentDataPath}/Logs/game_{yyyy-MM-dd}.log"</c>).
+        /// </param>
         /// <param name="layout">Custom layout. If null, standard file pattern layout is used.</param>
         /// <param name="ringBufferCapacity">Capacity of the internal ring buffer.</param>
         public AsyncFileSink(string filePath, ILogLayout layout = null, int ringBufferCapacity = 4096)
         {
-            _baseFilePath = filePath;
+            FilePathTemplate = string.IsNullOrWhiteSpace(filePath)
+                ? FilePathResolver.DefaultFilePathTemplate
+                : filePath;
+            _baseFilePath = FilePathResolver.Resolve(FilePathTemplate);
             Layout = layout ?? new PatternLayout(PatternLayout.DefaultFilePattern, useColorTags: false);
             _ringBuffer = new LogRingBuffer(ringBufferCapacity);
 
