@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using LogLine.Config;
 using LogLine.Core;
@@ -6,7 +7,7 @@ using LogLine.Interceptors;
 using LogLine.Layouts;
 using LogLine.Sinks;
 using UnityEngine;
-using ILogger = LogLine.Core.ILogger;
+using Logger = LogLine.Core.Logger;
 
 namespace LogLine
 {
@@ -32,7 +33,7 @@ namespace LogLine
         /// <summary>
         /// Gets the default 'Global' category logger instance.
         /// </summary>
-        public static ILogger Global { get; private set; } = LogLineCore.GetLogger("Global");
+        public static Logger Global { get; private set; } = LogLineCore.GetLogger("Global");
 
         #endregion
 
@@ -41,7 +42,7 @@ namespace LogLine
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoInitialize()
         {
-            LogLineSettings settings = Resources.Load<LogLineSettings>("LogLineSettings");
+            var settings = Resources.Load<LogLineSettings>("LogLineSettings");
             Initialize(settings);
         }
 
@@ -203,17 +204,19 @@ namespace LogLine
 
         /// <summary>
         /// Resolves or instantiates a category-bound logger instance.
+        /// Returns the concrete <see cref="Logger"/> type so call sites benefit from compile-time stripping.
         /// </summary>
         /// <param name="category">The category name.</param>
-        /// <returns>A thread-safe <see cref="ILogger"/> instance.</returns>
-        public static ILogger GetLogger(string category) => LogLineCore.GetLogger(category);
+        /// <returns>A thread-safe <see cref="Logger"/> instance.</returns>
+        public static Logger GetLogger(string category) => LogLineCore.GetLogger(category);
 
         /// <summary>
         /// Resolves or instantiates a logger bound to the specified type's cached short name.
+        /// Returns the concrete <see cref="Logger"/> type so call sites benefit from compile-time stripping.
         /// </summary>
         /// <typeparam name="T">Type to extract category name from.</typeparam>
-        /// <returns>A thread-safe <see cref="ILogger"/> instance.</returns>
-        public static ILogger GetLogger<T>() => LogLineCore.GetLogger<T>();
+        /// <returns>A thread-safe <see cref="Logger"/> instance.</returns>
+        public static Logger GetLogger<T>() => LogLineCore.GetLogger<T>();
 
         #endregion
 
@@ -222,6 +225,7 @@ namespace LogLine
         /// <summary>Logs a trace message to the Global logger.</summary>
         /// <param name="message">The message text.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace)]
         [HideInCallstack]
         public static void Trace(string message, UnityEngine.Object context = null) => Global.Trace(message, context);
 
@@ -230,8 +234,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace)]
         [HideInCallstack]
-        public static void Trace<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Trace(format, arg1, context);
+        public static void Trace<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Trace(format, in arg1, context);
 
         /// <summary>Logs a formatted trace message with two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -240,8 +245,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace)]
         [HideInCallstack]
-        public static void Trace<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Trace(format, arg1, arg2, context);
+        public static void Trace<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Trace(format, in arg1, in arg2, context);
 
         /// <summary>Logs a formatted trace message with three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -252,8 +258,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace)]
         [HideInCallstack]
-        public static void Trace<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Trace(format, arg1, arg2, arg3, context);
+        public static void Trace<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Trace(format, in arg1, in arg2, in arg3, context);
 
         #endregion
 
@@ -262,6 +269,7 @@ namespace LogLine
         /// <summary>Logs a debug message to the Global logger.</summary>
         /// <param name="message">The message text.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug)]
         [HideInCallstack]
         public static void Debug(string message, UnityEngine.Object context = null) => Global.Debug(message, context);
 
@@ -270,8 +278,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug)]
         [HideInCallstack]
-        public static void Debug<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Debug(format, arg1, context);
+        public static void Debug<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Debug(format, in arg1, context);
 
         /// <summary>Logs a formatted debug message with two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -280,8 +289,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug)]
         [HideInCallstack]
-        public static void Debug<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Debug(format, arg1, arg2, context);
+        public static void Debug<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Debug(format, in arg1, in arg2, context);
 
         /// <summary>Logs a formatted debug message with three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -292,8 +302,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug)]
         [HideInCallstack]
-        public static void Debug<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Debug(format, arg1, arg2, arg3, context);
+        public static void Debug<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Debug(format, in arg1, in arg2, in arg3, context);
 
         #endregion
 
@@ -302,6 +313,7 @@ namespace LogLine
         /// <summary>Logs an informational message to the Global logger.</summary>
         /// <param name="message">The message text.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo)]
         [HideInCallstack]
         public static void Info(string message, UnityEngine.Object context = null) => Global.Info(message, context);
 
@@ -310,8 +322,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo)]
         [HideInCallstack]
-        public static void Info<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Info(format, arg1, context);
+        public static void Info<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Info(format, in arg1, context);
 
         /// <summary>Logs a formatted informational message with two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -320,8 +333,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo)]
         [HideInCallstack]
-        public static void Info<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Info(format, arg1, arg2, context);
+        public static void Info<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Info(format, in arg1, in arg2, context);
 
         /// <summary>Logs a formatted informational message with three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -332,8 +346,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo)]
         [HideInCallstack]
-        public static void Info<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Info(format, arg1, arg2, arg3, context);
+        public static void Info<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Info(format, in arg1, in arg2, in arg3, context);
 
         #endregion
 
@@ -342,6 +357,7 @@ namespace LogLine
         /// <summary>Logs a warning message to the Global logger.</summary>
         /// <param name="message">The message text.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn)]
         [HideInCallstack]
         public static void Warn(string message, UnityEngine.Object context = null) => Global.Warn(message, context);
 
@@ -350,8 +366,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn)]
         [HideInCallstack]
-        public static void Warn<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Warn(format, arg1, context);
+        public static void Warn<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Warn(format, in arg1, context);
 
         /// <summary>Logs a formatted warning message with two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -360,8 +377,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn)]
         [HideInCallstack]
-        public static void Warn<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Warn(format, arg1, arg2, context);
+        public static void Warn<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Warn(format, in arg1, in arg2, context);
 
         /// <summary>Logs a formatted warning message with three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -372,8 +390,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn)]
         [HideInCallstack]
-        public static void Warn<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Warn(format, arg1, arg2, arg3, context);
+        public static void Warn<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Warn(format, in arg1, in arg2, in arg3, context);
 
         #endregion
 
@@ -382,6 +401,7 @@ namespace LogLine
         /// <summary>Logs an error message to the Global logger.</summary>
         /// <param name="message">The message text.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
         public static void Error(string message, UnityEngine.Object context = null) => Global.Error(message, context);
 
@@ -389,6 +409,7 @@ namespace LogLine
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Optional descriptive message.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
         public static void Error(Exception exception, string message = null, UnityEngine.Object context = null) => Global.Error(exception, message, context);
 
@@ -397,8 +418,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
-        public static void Error<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Error(format, arg1, context);
+        public static void Error<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Error(format, in arg1, context);
 
         /// <summary>Logs a formatted error message with two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -407,8 +429,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
-        public static void Error<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Error(format, arg1, arg2, context);
+        public static void Error<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Error(format, in arg1, in arg2, context);
 
         /// <summary>Logs a formatted error message with three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -419,8 +442,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
-        public static void Error<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Error(format, arg1, arg2, arg3, context);
+        public static void Error<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Error(format, in arg1, in arg2, in arg3, context);
 
         /// <summary>Logs an exception with a formatted message and one argument without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -428,8 +452,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
-        public static void Error<T1>(Exception exception, string format, in T1 arg1, UnityEngine.Object context = null) => Global.Error(exception, format, arg1, context);
+        public static void Error<T1>(Exception exception, string format, in T1 arg1, UnityEngine.Object context = null) => Global.Error(exception, format, in arg1, context);
 
         /// <summary>Logs an exception with a formatted message and two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -439,8 +464,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
-        public static void Error<T1, T2>(Exception exception, string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Error(exception, format, arg1, arg2, context);
+        public static void Error<T1, T2>(Exception exception, string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Error(exception, format, in arg1, in arg2, context);
 
         /// <summary>Logs an exception with a formatted message and three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -452,8 +478,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError)]
         [HideInCallstack]
-        public static void Error<T1, T2, T3>(Exception exception, string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Error(exception, format, arg1, arg2, arg3, context);
+        public static void Error<T1, T2, T3>(Exception exception, string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Error(exception, format, in arg1, in arg2, in arg3, context);
 
         #endregion
 
@@ -462,6 +489,7 @@ namespace LogLine
         /// <summary>Logs a fatal error message to the Global logger.</summary>
         /// <param name="message">The message text.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
         public static void Fatal(string message, UnityEngine.Object context = null) => Global.Fatal(message, context);
 
@@ -469,6 +497,7 @@ namespace LogLine
         /// <param name="exception">The fatal exception to log.</param>
         /// <param name="message">Optional descriptive message.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
         public static void Fatal(Exception exception, string message = null, UnityEngine.Object context = null) => Global.Fatal(exception, message, context);
 
@@ -477,8 +506,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
-        public static void Fatal<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Fatal(format, arg1, context);
+        public static void Fatal<T1>(string format, in T1 arg1, UnityEngine.Object context = null) => Global.Fatal(format, in arg1, context);
 
         /// <summary>Logs a formatted fatal message with two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -487,8 +517,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
-        public static void Fatal<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Fatal(format, arg1, arg2, context);
+        public static void Fatal<T1, T2>(string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Fatal(format, in arg1, in arg2, context);
 
         /// <summary>Logs a formatted fatal message with three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -499,8 +530,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
-        public static void Fatal<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Fatal(format, arg1, arg2, arg3, context);
+        public static void Fatal<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Fatal(format, in arg1, in arg2, in arg3, context);
 
         /// <summary>Logs a fatal exception with a formatted message and one argument without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -508,8 +540,9 @@ namespace LogLine
         /// <param name="format">The composite format template.</param>
         /// <param name="arg1">The first argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
-        public static void Fatal<T1>(Exception exception, string format, in T1 arg1, UnityEngine.Object context = null) => Global.Fatal(exception, format, arg1, context);
+        public static void Fatal<T1>(Exception exception, string format, in T1 arg1, UnityEngine.Object context = null) => Global.Fatal(exception, format, in arg1, context);
 
         /// <summary>Logs a fatal exception with a formatted message and two arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -519,8 +552,9 @@ namespace LogLine
         /// <param name="arg1">The first argument.</param>
         /// <param name="arg2">The second argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
-        public static void Fatal<T1, T2>(Exception exception, string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Fatal(exception, format, arg1, arg2, context);
+        public static void Fatal<T1, T2>(Exception exception, string format, in T1 arg1, in T2 arg2, UnityEngine.Object context = null) => Global.Fatal(exception, format, in arg1, in arg2, context);
 
         /// <summary>Logs a fatal exception with a formatted message and three arguments without boxing.</summary>
         /// <typeparam name="T1">The type of the first argument.</typeparam>
@@ -532,8 +566,9 @@ namespace LogLine
         /// <param name="arg2">The second argument.</param>
         /// <param name="arg3">The third argument.</param>
         /// <param name="context">Optional Unity context object.</param>
+        [Conditional(LogLineDefines.MinTrace), Conditional(LogLineDefines.MinDebug), Conditional(LogLineDefines.MinInfo), Conditional(LogLineDefines.MinWarn), Conditional(LogLineDefines.MinError), Conditional(LogLineDefines.MinFatal)]
         [HideInCallstack]
-        public static void Fatal<T1, T2, T3>(Exception exception, string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Fatal(exception, format, arg1, arg2, arg3, context);
+        public static void Fatal<T1, T2, T3>(Exception exception, string format, in T1 arg1, in T2 arg2, in T3 arg3, UnityEngine.Object context = null) => Global.Fatal(exception, format, in arg1, in arg2, in arg3, context);
 
         #endregion
     }
