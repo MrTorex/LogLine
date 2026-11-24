@@ -1,6 +1,6 @@
 {
   "name": "LogLine.Editor",
-  "rootNamespace": "LogLine.Editor",
+  "rootNamespace": "LogLine",
   "references": [
     "GUID:a87e662fb5bf45aeb8feb44c1c27de90"
   ],
