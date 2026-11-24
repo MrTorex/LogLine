@@ -11,11 +11,23 @@ namespace LogLine.Interceptors
     {
         #region Private Fields
 
+        private static volatile ILogHandler _activeOriginalHandler;
+
         private readonly ILogHandler _originalHandler;
         private bool _isDisposed;
 
         [ThreadStatic]
         private static bool _isProcessingNativeCall;
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets the original native Unity <see cref="ILogHandler"/> captured before interception,
+        /// allowing internal sinks to bypass the interceptor directly.
+        /// </summary>
+        internal static ILogHandler OriginalHandler => _activeOriginalHandler;
 
         #endregion
 
@@ -27,6 +39,7 @@ namespace LogLine.Interceptors
         public UnityLogInterceptor()
         {
             _originalHandler = Debug.unityLogger.logHandler;
+            _activeOriginalHandler = _originalHandler;
             Debug.unityLogger.logHandler = this;
         }
 
@@ -100,6 +113,11 @@ namespace LogLine.Interceptors
         {
             if (_isDisposed) return;
             _isDisposed = true;
+
+            if (ReferenceEquals(_activeOriginalHandler, _originalHandler))
+            {
+                _activeOriginalHandler = null;
+            }
 
             if (Debug.unityLogger.logHandler == this)
             {

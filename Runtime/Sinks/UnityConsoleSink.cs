@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using LogLine.Core;
+using LogLine.Interceptors;
 using LogLine.Layouts;
 using UnityEngine;
 
@@ -111,22 +112,15 @@ namespace LogLine.Sinks
         [HideInCallstack]
         private static void DispatchToNativeConsole(LogLevel level, string message, UnityEngine.Object context)
         {
-            switch (level)
+            LogType logType = level switch
             {
-                case LogLevel.Warn:
-                    Debug.LogWarning(message, context);
-                    break;
-                case LogLevel.Error:
-                case LogLevel.Fatal:
-                    Debug.LogError(message, context);
-                    break;
-                case LogLevel.Trace:
-                case LogLevel.Debug:
-                case LogLevel.Info:
-                default:
-                    Debug.Log(message, context);
-                    break;
-            }
+                LogLevel.Warn => LogType.Warning,
+                LogLevel.Error or LogLevel.Fatal => LogType.Error,
+                _ => LogType.Log
+            };
+
+            ILogHandler targetHandler = UnityLogInterceptor.OriginalHandler ?? Debug.unityLogger.logHandler;
+            targetHandler.LogFormat(logType, context, "{0}", message);
         }
 
         #endregion
