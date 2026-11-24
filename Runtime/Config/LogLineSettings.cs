@@ -33,6 +33,12 @@ namespace LogLine.Config
         [Tooltip("Pattern template for Unity Console. Example: [%d{HH:mm:ss.fff}] [%p] [%c]: %m%ex")]
         public string consolePattern = PatternLayout.DefaultConsolePattern;
 
+        public CategoryFilterConfig consoleCategoryFilter = new()
+        {
+            Mode = CategoryFilterMode.None,
+            Prefixes = new List<string>()
+        };
+
         #endregion
 
         #region File Sink Settings
@@ -46,6 +52,12 @@ namespace LogLine.Config
 
         [Tooltip("Pattern template for log files. Example: %d{yyyy-MM-dd HH:mm:ss.fff} [%p] [%c] %m%ex%n")]
         public string filePattern = PatternLayout.DefaultFilePattern;
+
+        public CategoryFilterConfig fileCategoryFilter = new()
+        {
+            Mode = CategoryFilterMode.None,
+            Prefixes = new List<string>()
+        };
 
         #endregion
 

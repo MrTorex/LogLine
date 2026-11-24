@@ -11,7 +11,7 @@ namespace LogLine.Sinks
     /// Thread-safe sink that serializes log events via <see cref="ILogLayout"/>
     /// and dispatches them directly to Unity's native console.
     /// </summary>
-    public sealed class UnityConsoleSink : ILogSink
+    public sealed class UnityConsoleSink : LogSinkBase
     {
         #region Constants
 
@@ -22,13 +22,7 @@ namespace LogLine.Sinks
         #region Properties
 
         /// <inheritdoc />
-        public string Name => "UnityConsole";
-
-        /// <inheritdoc />
-        public bool IsEnabled { get; set; } = true;
-
-        /// <inheritdoc />
-        public LogLevel MinimumLevel { get; set; } = LogLevel.Trace;
+        public override string Name => "UnityConsole";
 
         /// <summary>
         /// Gets or sets the active layout responsible for formatting log events.
@@ -61,20 +55,21 @@ namespace LogLine.Sinks
 
         #endregion
 
-        #region ILogSink Implementation
+        #region LogSinkBase Implementation
 
         /// <inheritdoc />
         [HideInCallstack]
-        public void Emit(in LogEvent logEvent)
+        protected override void Write(in LogEvent logEvent)
         {
-            if (!IsEnabled || logEvent.Level < MinimumLevel || Layout == null)
+            ILogLayout layout = Layout;
+            if (layout == null)
             {
                 return;
             }
 
             // 1. Fast Path: Format directly into stack memory
             Span<char> stackBuffer = stackalloc char[StackBufferSize];
-            if (Layout.TryFormat(in logEvent, stackBuffer, out int charsWritten))
+            if (layout.TryFormat(in logEvent, stackBuffer, out int charsWritten))
             {
                 string formattedString = stackBuffer[..charsWritten].ToString();
                 DispatchToNativeConsole(logEvent.Level, formattedString, logEvent.Context);
@@ -86,7 +81,7 @@ namespace LogLine.Sinks
             char[] rented = ArrayPool<char>.Shared.Rent(poolSize);
             try
             {
-                while (!Layout.TryFormat(in logEvent, rented, out charsWritten))
+                while (!layout.TryFormat(in logEvent, rented, out charsWritten))
                 {
                     poolSize *= 2;
                     ArrayPool<char>.Shared.Return(rented);
@@ -101,9 +96,6 @@ namespace LogLine.Sinks
                 ArrayPool<char>.Shared.Return(rented);
             }
         }
-
-        /// <inheritdoc />
-        public void Dispose() { }
 
         #endregion
 

@@ -434,13 +434,26 @@ namespace LogLine.Core
                 for (int i = 0; i < sinks.Length; i++)
                 {
                     ILogSink sink = sinks[i];
-                    if (!sink.IsEnabled || logEvent.Level < sink.MinimumLevel)
-                    {
-                        continue;
-                    }
 
                     try
                     {
+                        if (sink is LogSinkBase baseSink)
+                        {
+                            baseSink.Emit(in logEvent);
+                            continue;
+                        }
+
+                        if (!sink.IsEnabled || logEvent.Level < sink.MinimumLevel)
+                        {
+                            continue;
+                        }
+
+                        CategoryFilter filter = sink.CategoryFilter;
+                        if (filter != null && !filter.IsMatch(logEvent.LoggerName))
+                        {
+                            continue;
+                        }
+
                         sink.Emit(in logEvent);
                     }
                     catch (Exception sinkEx)

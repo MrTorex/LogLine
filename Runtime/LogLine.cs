@@ -105,7 +105,8 @@ namespace LogLine
 
                         LogLineCore.AddSink(new UnityConsoleSink(consoleLayout)
                         {
-                            MinimumLevel = settings.consoleMinimumLevel
+                            MinimumLevel = settings.consoleMinimumLevel,
+                            CategoryFilter = settings.consoleCategoryFilter.Build()
                         });
                     }
 
@@ -124,7 +125,8 @@ namespace LogLine
                         {
                             MinimumLevel = settings.fileMinimumLevel,
                             MaxFileSizeBytes = settings.maxFileSizeBytes,
-                            MaxArchiveFiles = settings.maxArchiveFiles
+                            MaxArchiveFiles = settings.maxArchiveFiles,
+                            CategoryFilter = settings.fileCategoryFilter.Build()
                         });
                     }
 
@@ -132,15 +134,16 @@ namespace LogLine
                     {
                         _interceptor = new UnityLogInterceptor();
                     }
+
+                    LogLineCore.RefreshLoggerLevels(settings.ResolveLevelForCategory);
                 }
                 else
                 {
                     LogLineCore.GlobalMinimumLevel = LogLevel.Trace;
                     LogLineCore.SetCategoryLevelResolver(null);
                     LogLineCore.AddSink(new UnityConsoleSink());
+                    LogLineCore.RefreshLoggerLevels(null);
                 }
-
-                ApplySettings(settings);
             }
         }
 
@@ -156,6 +159,9 @@ namespace LogLine
             LogLineCore.SetCategoryLevelResolver(settings.ResolveLevelForCategory);
             LogLineCore.RefreshLoggerLevels(settings.ResolveLevelForCategory);
 
+            CategoryFilter consoleFilter = settings.consoleCategoryFilter.Build();
+            CategoryFilter fileFilter = settings.fileCategoryFilter.Build();
+
             ILogSink[] sinks = LogLineCore.GetSinksSnapshot();
             for (int i = 0; i < sinks.Length; i++)
             {
@@ -164,10 +170,12 @@ namespace LogLine
                     case UnityConsoleSink consoleSink:
                         consoleSink.IsEnabled = settings.enableConsoleLogging;
                         consoleSink.MinimumLevel = settings.consoleMinimumLevel;
+                        consoleSink.CategoryFilter = consoleFilter;
                         break;
                     case AsyncFileSink fileSink:
                         fileSink.IsEnabled = settings.enableFileLogging;
                         fileSink.MinimumLevel = settings.fileMinimumLevel;
+                        fileSink.CategoryFilter = fileFilter;
                         break;
                 }
             }
