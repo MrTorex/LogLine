@@ -56,6 +56,7 @@ namespace LogLine
                 _interceptor = null;
                 Settings = null;
                 LogLineCore.ResetStaticState();
+                FilePathResolver.CaptureUnityEnvironment();
                 Global = LogLineCore.GetLogger("Global");
             }
         }
@@ -89,6 +90,7 @@ namespace LogLine
                 _interceptor = null;
 
                 LogLineCore.ClearSinks();
+                FilePathResolver.CaptureUnityEnvironment();
                 Settings = settings;
 
                 if (settings != null)
@@ -113,22 +115,26 @@ namespace LogLine
 
                     if (settings.enableFileLogging)
                     {
-                        string logDirectory = Path.Combine(Application.persistentDataPath, "Logs");
-                        string fullPath = Path.Combine(logDirectory, settings.fileName);
-
                         string filePattern = string.IsNullOrEmpty(settings.filePattern)
                             ? PatternLayout.DefaultFilePattern
                             : settings.filePattern;
 
                         var fileLayout = new PatternLayout(filePattern, useColorTags: false);
 
-                        LogLineCore.AddSink(new AsyncFileSink(fullPath, fileLayout)
+                        try
                         {
-                            MinimumLevel = settings.fileMinimumLevel,
-                            MaxFileSizeBytes = settings.maxFileSizeBytes,
-                            MaxArchiveFiles = settings.maxArchiveFiles,
-                            CategoryFilter = settings.fileCategoryFilter.Build()
-                        });
+                            LogLineCore.AddSink(new AsyncFileSink(settings.filePath, fileLayout)
+                            {
+                                MinimumLevel = settings.fileMinimumLevel,
+                                MaxFileSizeBytes = settings.maxFileSizeBytes,
+                                MaxArchiveFiles = settings.maxArchiveFiles,
+                                CategoryFilter = settings.fileCategoryFilter.Build()
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[LogLine] Failed to initialize AsyncFileSink for '{settings.filePath}': {ex}");
+                        }
                     }
 
                     if (settings.interceptUnityLogs)

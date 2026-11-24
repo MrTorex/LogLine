@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using LogLine.Core;
 using LogLine.Layouts;
+using LogLine.Sinks;
 using UnityEngine;
 
 namespace LogLine.Config
@@ -46,7 +47,10 @@ namespace LogLine.Config
         [Header("Async File Sink")]
         public bool enableFileLogging = true;
         public LogLevel fileMinimumLevel = LogLevel.Debug;
-        public string fileName = "game.log";
+
+        [Tooltip("File path template supporting macros ({persistentDataPath}, {dataPath}, {projectPath}, {tempPath}, {productName}, {version}, {platform}, {pid}) and date tokens ({date}, {datetime}, {yyyy-MM-dd}, {date:yyyy-MM-dd_HH-mm-ss}). Relative paths resolve under {persistentDataPath}/Logs/.")]
+        public string filePath = FilePathResolver.DefaultFilePathTemplate;
+
         public long maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
         public int maxArchiveFiles = 3;
 
