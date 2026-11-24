@@ -6,6 +6,8 @@ using System.Threading;
 using LogLine.Buffering;
 using LogLine.Core;
 using LogLine.Layouts;
+using UnityEngine;
+using ThreadPriority = System.Threading.ThreadPriority;
 
 namespace LogLine.Sinks
 {
@@ -13,7 +15,7 @@ namespace LogLine.Sinks
     /// Asynchronous file sink writing batches to persistent disk streams via a lock-free background pipeline.
     /// Serializes log events via <see cref="ILogLayout"/> with zero-allocation buffers.
     /// </summary>
-    public sealed class AsyncFileSink : ILogSink
+    public sealed class AsyncFileSink : LogSinkBase
     {
         #region Constants
 
@@ -34,7 +36,6 @@ namespace LogLine.Sinks
         private FileStream _fileStream;
         private StreamWriter _writer;
         private volatile bool _isRunning = true;
-        private bool _isDisposed;
         private int _lastLoggedDroppedCount;
 
         #endregion
@@ -42,13 +43,7 @@ namespace LogLine.Sinks
         #region Properties
 
         /// <inheritdoc />
-        public string Name => "AsyncFile";
-
-        /// <inheritdoc />
-        public bool IsEnabled { get; set; } = true;
-
-        /// <inheritdoc />
-        public LogLevel MinimumLevel { get; set; } = LogLevel.Trace;
+        public override string Name => "AsyncFile";
 
         /// <summary>
         /// Gets or sets the active layout used to format events written to disk.
@@ -95,16 +90,12 @@ namespace LogLine.Sinks
 
         #endregion
 
-        #region ILogSink Implementation
+        #region LogSinkBase Implementation
 
         /// <inheritdoc />
-        public void Emit(in LogEvent logEvent)
+        [HideInCallstack]
+        protected override void Write(in LogEvent logEvent)
         {
-            if (_isDisposed || !IsEnabled || logEvent.Level < MinimumLevel)
-            {
-                return;
-            }
-
             if (_ringBuffer.TryEnqueue(in logEvent))
             {
                 _signal.Set();
@@ -112,11 +103,8 @@ namespace LogLine.Sinks
         }
 
         /// <inheritdoc />
-        public void Dispose()
+        protected override void OnDispose()
         {
-            if (_isDisposed) return;
-            _isDisposed = true;
-
             _isRunning = false;
             _signal.Set();
 
@@ -174,21 +162,19 @@ namespace LogLine.Sinks
                 }
             }
 
-            if (hasEntries)
+            if (hasEntries && forceFlush)
             {
-                if (forceFlush)
-                {
-                    _writer.Flush();
-                }
+                _writer.Flush();
             }
         }
 
         private void WriteLogEvent(ref Span<char> formatBuffer, in LogEvent logEvent)
         {
-            if (Layout == null) return;
+            ILogLayout layout = Layout;
+            if (layout == null) return;
 
             // Fast path: layout fits into stack buffer
-            if (Layout.TryFormat(in logEvent, formatBuffer, out int charsWritten))
+            if (layout.TryFormat(in logEvent, formatBuffer, out int charsWritten))
             {
                 _writer.Write(formatBuffer[..charsWritten]);
                 return;
@@ -199,7 +185,7 @@ namespace LogLine.Sinks
             char[] rented = ArrayPool<char>.Shared.Rent(poolSize);
             try
             {
-                while (!Layout.TryFormat(in logEvent, rented, out charsWritten))
+                while (!layout.TryFormat(in logEvent, rented, out charsWritten))
                 {
                     poolSize *= 2;
                     ArrayPool<char>.Shared.Return(rented);
