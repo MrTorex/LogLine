@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements"
+         xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="True">
+    <ui:VisualElement class="ll-tab-root">
+        <!-- Core Global Configuration -->
+        <ui:VisualElement class="ll-card">
+            <ui:Label text="Global Pipeline Settings" class="ll-card-title" />
+            <ui:Label text="Fallback threshold for unconfigured categories and Unity lifecycle integration." class="ll-card-subtitle" />
+
+            <uie:PropertyField name="global-level-field" binding-path="globalMinimumLevel" label="Global Minimum Level" class="ll-field" />
+            <uie:PropertyField name="intercept-unity-field" binding-path="interceptUnityLogs" label="Intercept Native Unity Logs" class="ll-field" />
+            <uie:PropertyField name="auto-init-field" binding-path="autoInitialize" label="Auto-Initialize on BeforeSceneLoad" class="ll-field" />
+
+            <ui:Label name="intercept-note" text="Note: Native Debug.Log calls still allocate inside UnityEngine.Logger before interception. Prefer LogLine.* for zero-allocation and compile-time stripping." class="ll-muted" />
+        </ui:VisualElement>
+
+        <!-- Effective Severity Breakdown -->
+        <ui:VisualElement class="ll-card">
+            <ui:Label text="Effective Global Severity Breakdown" class="ll-card-title" />
+            <ui:Label text="Combined effect of compile-time defines (LOGLINE_MIN_*) and runtime globalMinimumLevel." class="ll-card-subtitle" />
+            <ui:VisualElement name="global-level-strip" class="ll-level-strip" />
+            <ui:Label text="Green: Active  |  Orange: Filtered at runtime (zero-alloc check)  |  Dimmed: Stripped at compile time (0 CPU / 0 GC)" class="ll-muted" />
+        </ui:VisualElement>
+
+        <!-- Runtime Diagnostics -->
+        <ui:VisualElement class="ll-card">
+            <ui:Label text="Live Runtime Diagnostics" class="ll-card-title" />
+            <ui:Label name="diagnostics-subtitle" text="Enter Play Mode to inspect active sinks, interceptor state, and ring buffer health." class="ll-card-subtitle" />
+            <ui:VisualElement name="diagnostics-container" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -19,6 +19,12 @@ namespace LogLine.Sinks
 
         #endregion
 
+        #region Private Fields
+
+        private volatile ILogLayout _layout;
+
+        #endregion
+
         #region Properties
 
         /// <inheritdoc />
@@ -26,8 +32,13 @@ namespace LogLine.Sinks
 
         /// <summary>
         /// Gets or sets the active layout responsible for formatting log events.
+        /// Swapped atomically for thread-safe runtime reconfiguration.
         /// </summary>
-        public ILogLayout Layout { get; set; }
+        public ILogLayout Layout
+        {
+            get => _layout;
+            set => _layout = value;
+        }
 
         #endregion
 

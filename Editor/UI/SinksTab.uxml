@@ -1,0 +1,75 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements"
+         xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="True">
+    <ui:VisualElement class="ll-tab-root">
+        <!-- Unity Console Sink -->
+        <ui:Foldout name="console-foldout" text="Unity Console Sink" class="ll-foldout">
+            <ui:Toggle name="console-enabled-field" binding-path="enableConsoleLogging" label="Enable Console Logging" class="ll-field" />
+            <ui:VisualElement name="console-body">
+                <uie:PropertyField binding-path="consoleMinimumLevel" label="Minimum Level" class="ll-field" />
+                <uie:PropertyField binding-path="consoleUseColorTags" label="Rich-Text Color Tags" class="ll-field" />
+                <uie:PropertyField binding-path="consolePattern" label="Pattern" class="ll-field" />
+
+                <ui:VisualElement name="console-token-strip" class="ll-token-strip" />
+
+                <ui:VisualElement class="ll-preview-header">
+                    <ui:Label text="CONSOLE OUTPUT PREVIEW" class="ll-preview-label" />
+                    <ui:Toggle name="console-preview-ex-toggle" label="Sample Exception" />
+                </ui:VisualElement>
+                <ui:Label name="console-preview-box" class="ll-preview-box" />
+
+                <ui:Label text="Category Routing Filter" class="ll-subsection-title" />
+                <uie:PropertyField name="console-filter-mode-field" binding-path="consoleCategoryFilter.mode" label="Filter Mode" class="ll-field" />
+                <uie:PropertyField name="console-filter-prefixes-field" binding-path="consoleCategoryFilter.prefixes" label="Category Prefixes" class="ll-field" />
+            </ui:VisualElement>
+        </ui:Foldout>
+
+        <!-- Async File Sink -->
+        <ui:Foldout name="file-foldout" text="Async File Sink" class="ll-foldout">
+            <ui:Toggle name="file-enabled-field" binding-path="enableFileLogging" label="Enable File Logging" class="ll-field" />
+            <ui:VisualElement name="file-body">
+                <uie:PropertyField binding-path="fileMinimumLevel" label="Minimum Level" class="ll-field" />
+                <uie:PropertyField binding-path="filePath" label="File Path Template" class="ll-field" />
+
+                <ui:VisualElement name="file-macro-strip" class="ll-token-strip" />
+                <ui:Label name="file-readonly-warning" text="Warning: {dataPath} and {streamingAssetsPath} are read-only on Android, iOS, and console builds." class="ll-inline-warn ll-hidden" />
+
+                <ui:Label text="RESOLVED FILE PATH" class="ll-preview-label" />
+                <ui:Label name="file-path-preview-box" class="ll-preview-box" />
+
+                <ui:Label text="Rotation &amp; Retention" class="ll-subsection-title" />
+                <ui:VisualElement name="max-size-mb-host" class="ll-field" />
+                <uie:PropertyField binding-path="maxArchiveFiles" label="Max Archive Files" class="ll-field" />
+
+                <ui:Label text="Serialization Layout" class="ll-subsection-title" />
+                <uie:PropertyField name="file-layout-type-field" binding-path="fileLayoutType" label="Layout Type" class="ll-field" />
+
+                <ui:VisualElement name="file-pattern-section">
+                    <uie:PropertyField binding-path="filePattern" label="File Pattern" class="ll-field" />
+                    <ui:VisualElement name="file-token-strip" class="ll-token-strip" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="file-json-section" class="ll-hidden">
+                    <ui:Label text="Included JSON Fields (message is always serialized):" class="ll-muted" />
+                    <ui:VisualElement class="ll-json-grid">
+                        <uie:PropertyField binding-path="fileJsonLayout.includeTimestamp" label="timestamp" class="ll-json-toggle" />
+                        <uie:PropertyField binding-path="fileJsonLayout.includeLevel" label="level" class="ll-json-toggle" />
+                        <uie:PropertyField binding-path="fileJsonLayout.includeLogger" label="logger" class="ll-json-toggle" />
+                        <uie:PropertyField binding-path="fileJsonLayout.includeThreadId" label="threadId" class="ll-json-toggle" />
+                        <uie:PropertyField binding-path="fileJsonLayout.includeException" label="exception" class="ll-json-toggle" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="ll-preview-header">
+                    <ui:Label text="FILE OUTPUT PREVIEW" class="ll-preview-label" />
+                    <ui:Toggle name="file-preview-ex-toggle" label="Sample Exception" />
+                </ui:VisualElement>
+                <ui:Label name="file-preview-box" class="ll-preview-box" />
+
+                <ui:Label text="Category Routing Filter" class="ll-subsection-title" />
+                <uie:PropertyField name="file-filter-mode-field" binding-path="fileCategoryFilter.mode" label="Filter Mode" class="ll-field" />
+                <uie:PropertyField name="file-filter-prefixes-field" binding-path="fileCategoryFilter.prefixes" label="Category Prefixes" class="ll-field" />
+            </ui:VisualElement>
+        </ui:Foldout>
+    </ui:VisualElement>
+</ui:UXML>

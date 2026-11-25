@@ -14,10 +14,10 @@ namespace LogLine.Config
         #region Fields
 
         [Tooltip("None disables filtering; AllowList accepts only matching prefixes; DenyList blocks matching prefixes.")]
-        public CategoryFilterMode Mode;
+        public CategoryFilterMode mode;
 
         [Tooltip("Category prefixes matched case-insensitively (e.g. 'Combat', 'Combat.AI', 'Network.').")]
-        public List<string> Prefixes;
+        public List<string> prefixes;
 
         #endregion
 
@@ -28,15 +28,7 @@ namespace LogLine.Config
         /// or returns <see langword="null"/> when filtering is disabled.
         /// </summary>
         /// <returns>A configured <see cref="CategoryFilter"/> or <see langword="null"/>.</returns>
-        public CategoryFilter Build()
-        {
-            if (Mode == CategoryFilterMode.None)
-            {
-                return null;
-            }
-
-            return new CategoryFilter(Mode, Prefixes);
-        }
+        public CategoryFilter Build() => mode == CategoryFilterMode.None ? null : new CategoryFilter(mode, prefixes);
 
         #endregion
     }

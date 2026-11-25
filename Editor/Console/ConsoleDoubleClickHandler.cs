@@ -157,8 +157,7 @@ namespace LogLine.Editor.Console
             {
                 object splitter = _splitterField.GetValue(consoleWindow);
                 if (splitter != null &&
-                    _splitterRealSizesField.GetValue(splitter) is int[] realSizes &&
-                    realSizes.Length > 0 &&
+                    _splitterRealSizesField.GetValue(splitter) is int[] { Length: > 0 } realSizes &&
                     realSizes[0] > 0)
                 {
                     return localPosition.y <= ConsoleToolbarHeight + realSizes[0];

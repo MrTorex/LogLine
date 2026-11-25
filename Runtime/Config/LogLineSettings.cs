@@ -22,6 +22,9 @@ namespace LogLine.Config
         [Tooltip("Automatically capture and redirect native Unity Debug.Log calls into the LogLine pipeline.")]
         public bool interceptUnityLogs = true;
 
+        [Tooltip("Automatically initialize LogLine during BeforeSceneLoad. Disable if initializing manually via DI or custom bootstrap.")]
+        public bool autoInitialize = true;
+
         #endregion
 
         #region Console Sink Settings
@@ -36,8 +39,8 @@ namespace LogLine.Config
 
         public CategoryFilterConfig consoleCategoryFilter = new()
         {
-            Mode = CategoryFilterMode.None,
-            Prefixes = new List<string>()
+            mode = CategoryFilterMode.None,
+            prefixes = new List<string>()
         };
 
         #endregion
@@ -60,10 +63,13 @@ namespace LogLine.Config
         [Tooltip("Pattern template for log files (used when File Layout Type is Pattern). Example: %d{yyyy-MM-dd HH:mm:ss.fff} [%p] [%c] %m%ex%n")]
         public string filePattern = PatternLayout.DefaultFilePattern;
 
+        [Tooltip("Field toggles used when File Layout Type is set to Json.")]
+        public JsonLayoutConfig fileJsonLayout = JsonLayoutConfig.Default;
+
         public CategoryFilterConfig fileCategoryFilter = new()
         {
-            Mode = CategoryFilterMode.None,
-            Prefixes = new List<string>()
+            mode = CategoryFilterMode.None,
+            prefixes = new List<string>()
         };
 
         #endregion
@@ -94,17 +100,17 @@ namespace LogLine.Config
                 for (int i = 0; i < categoryRules.Count; i++)
                 {
                     CategoryRule rule = categoryRules[i];
-                    if (string.IsNullOrEmpty(rule.CategoryPrefix))
+                    if (string.IsNullOrEmpty(rule.categoryPrefix))
                     {
                         continue;
                     }
 
-                    int prefixLength = rule.CategoryPrefix.Length;
+                    int prefixLength = rule.categoryPrefix.Length;
                     if (prefixLength > bestMatchLength &&
-                        category.StartsWith(rule.CategoryPrefix, StringComparison.OrdinalIgnoreCase))
+                        category.StartsWith(rule.categoryPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         bestMatchLength = prefixLength;
-                        resolvedLevel = rule.MinimumLevel;
+                        resolvedLevel = rule.minimumLevel;
                     }
                 }
 

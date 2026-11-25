@@ -32,19 +32,19 @@ namespace LogLine.Core
         /// Compile-time minimum severity level resolved from active scripting define symbols.
         /// </summary>
 #if LOGLINE_MIN_TRACE
-        public const LogLevel CompiledMinimumLevel = LogLevel.Trace;
+        public static readonly LogLevel CompiledMinimumLevel = LogLevel.Trace;
 #elif LOGLINE_MIN_DEBUG
-        public const LogLevel CompiledMinimumLevel = LogLevel.Debug;
+        public static readonly LogLevel CompiledMinimumLevel = LogLevel.Debug;
 #elif LOGLINE_MIN_INFO
-        public const LogLevel CompiledMinimumLevel = LogLevel.Info;
+        public static readonly LogLevel CompiledMinimumLevel = LogLevel.Info;
 #elif LOGLINE_MIN_WARN
-        public const LogLevel CompiledMinimumLevel = LogLevel.Warn;
+        public static readonly LogLevel CompiledMinimumLevel = LogLevel.Warn;
 #elif LOGLINE_MIN_ERROR
-        public const LogLevel CompiledMinimumLevel = LogLevel.Error;
+        public static readonly LogLevel CompiledMinimumLevel = LogLevel.Error;
 #elif LOGLINE_MIN_FATAL
-        public const LogLevel CompiledMinimumLevel = LogLevel.Fatal;
+        public static readonly LogLevel CompiledMinimumLevel = LogLevel.Fatal;
 #else
-        public const LogLevel CompiledMinimumLevel = LogLevel.None;
+        public static readonly LogLevel CompiledMinimumLevel = LogLevel.None;
 #endif
 
         #endregion

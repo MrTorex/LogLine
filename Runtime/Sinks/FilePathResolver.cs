@@ -230,45 +230,43 @@ namespace LogLine.Sinks
             {
                 char c = span[i];
 
-                if (c == '{')
+                switch (c)
                 {
-                    if (i + 1 < span.Length && span[i + 1] == '{')
-                    {
+                    case '{' when i + 1 < span.Length && span[i + 1] == '{':
                         sb.Append('{');
                         i += 2;
                         continue;
-                    }
-
-                    int nextSpecial = span[(i + 1)..].IndexOfAny('{', '}');
-                    if (nextSpecial < 0 || span[i + 1 + nextSpecial] != '}')
+                    case '{':
                     {
-                        sb.Append('{');
-                        i++;
-                        continue;
-                    }
+                        int nextSpecial = span[(i + 1)..].IndexOfAny('{', '}');
+                        if (nextSpecial < 0 || span[i + 1 + nextSpecial] != '}')
+                        {
+                            sb.Append('{');
+                            i++;
+                            continue;
+                        }
 
-                    ReadOnlySpan<char> token = span.Slice(i + 1, nextSpecial);
-                    if (token.Length > 0 && TryAppendToken(sb, token, env, localNow, utcNow))
-                    {
+                        ReadOnlySpan<char> token = span.Slice(i + 1, nextSpecial);
+                        if (token.Length > 0 && TryAppendToken(sb, token, env, localNow, utcNow))
+                        {
+                            i += nextSpecial + 2;
+                            continue;
+                        }
+
+                        // Preserve unrecognized tokens verbatim without corrupting the path
+                        sb.Append(template, i, nextSpecial + 2);
                         i += nextSpecial + 2;
                         continue;
                     }
-
-                    // Preserve unrecognized tokens verbatim without corrupting the path
-                    sb.Append(template, i, nextSpecial + 2);
-                    i += nextSpecial + 2;
-                    continue;
+                    case '}' when i + 1 < span.Length && span[i + 1] == '}':
+                        sb.Append('}');
+                        i += 2;
+                        continue;
+                    default:
+                        sb.Append(c);
+                        i++;
+                        break;
                 }
-
-                if (c == '}' && i + 1 < span.Length && span[i + 1] == '}')
-                {
-                    sb.Append('}');
-                    i += 2;
-                    continue;
-                }
-
-                sb.Append(c);
-                i++;
             }
 
             return sb.ToString();
@@ -400,12 +398,7 @@ namespace LogLine.Sinks
             }
 
             // 5. Bare date format tokens: {yyyy-MM-dd}, {HH-mm-ss}, {yyyyMMdd_HHmmss}
-            if (IsBareDateFormat(token))
-            {
-                return TryAppendFormattedDate(sb, localNow, token);
-            }
-
-            return false;
+            return IsBareDateFormat(token) && TryAppendFormattedDate(sb, localNow, token);
         }
 
         private static bool TryAppendFormattedDate(StringBuilder sb, DateTime timestamp, ReadOnlySpan<char> format)
