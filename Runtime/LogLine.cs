@@ -34,6 +34,11 @@ namespace LogLine
         /// </summary>
         public static Logger Global { get; private set; } = LogLineCore.GetLogger("Global");
 
+        /// <summary>
+        /// Gets a value indicating whether native Unity log interception is currently active.
+        /// </summary>
+        internal static bool IsInterceptorActive => _interceptor != null;
+
         #endregion
 
         #region Lifecycle & Auto-Init
@@ -42,6 +47,12 @@ namespace LogLine
         private static void AutoInitialize()
         {
             var settings = Resources.Load<LogLineSettings>("LogLineSettings");
+            if (settings != null && !settings.autoInitialize)
+            {
+                Settings = settings;
+                return;
+            }
+
             Initialize(settings);
         }
 
@@ -114,19 +125,7 @@ namespace LogLine
 
                     if (settings.enableFileLogging)
                     {
-                        ILogLayout fileLayout;
-                        if (settings.fileLayoutType == LogLayoutType.Json)
-                        {
-                            fileLayout = new JsonLayout(appendNewline: true);
-                        }
-                        else
-                        {
-                            string filePattern = string.IsNullOrEmpty(settings.filePattern)
-                                ? PatternLayout.DefaultFilePattern
-                                : settings.filePattern;
-
-                            fileLayout = new PatternLayout(filePattern, useColorTags: false);
-                        }
+                        ILogLayout fileLayout = BuildFileLayout(settings);
 
                         try
                         {
@@ -162,12 +161,26 @@ namespace LogLine
         }
 
         /// <summary>
-        /// Re-applies configuration rules to all active cached loggers and built-in sinks.
+        /// Re-applies configuration rules to all active cached loggers, interceptor state, and built-in sinks.
+        /// Does not recreate file streams when the file path template changes; call <see cref="Initialize"/> to rebind file paths.
         /// </summary>
         /// <param name="settings">The configuration settings asset to apply.</param>
         public static void ApplySettings(LogLineSettings settings)
         {
             if (settings == null) return;
+
+            lock (_syncLock)
+            {
+                if (settings.interceptUnityLogs && _interceptor == null)
+                {
+                    _interceptor = new UnityLogInterceptor();
+                }
+                else if (!settings.interceptUnityLogs && _interceptor != null)
+                {
+                    _interceptor.Dispose();
+                    _interceptor = null;
+                }
+            }
 
             LogLineCore.GlobalMinimumLevel = settings.globalMinimumLevel;
             LogLineCore.SetCategoryLevelResolver(settings.ResolveLevelForCategory);
@@ -175,6 +188,14 @@ namespace LogLine
 
             CategoryFilter consoleFilter = settings.consoleCategoryFilter.Build();
             CategoryFilter fileFilter = settings.fileCategoryFilter.Build();
+
+            string desiredConsolePattern = string.IsNullOrEmpty(settings.consolePattern)
+                ? PatternLayout.DefaultConsolePattern
+                : settings.consolePattern;
+
+            string desiredFilePattern = string.IsNullOrEmpty(settings.filePattern)
+                ? PatternLayout.DefaultFilePattern
+                : settings.filePattern;
 
             ILogSink[] sinks = LogLineCore.GetSinksSnapshot();
             for (int i = 0; i < sinks.Length; i++)
@@ -185,14 +206,55 @@ namespace LogLine
                         consoleSink.IsEnabled = settings.enableConsoleLogging;
                         consoleSink.MinimumLevel = settings.consoleMinimumLevel;
                         consoleSink.CategoryFilter = consoleFilter;
+
+                        if (consoleSink.Layout is not PatternLayout currentConsolePattern ||
+                            !string.Equals(currentConsolePattern.Pattern, desiredConsolePattern, StringComparison.Ordinal) ||
+                            currentConsolePattern.UseColorTags != settings.consoleUseColorTags)
+                        {
+                            consoleSink.Layout = new PatternLayout(desiredConsolePattern, settings.consoleUseColorTags);
+                        }
                         break;
+
                     case AsyncFileSink fileSink:
                         fileSink.IsEnabled = settings.enableFileLogging;
                         fileSink.MinimumLevel = settings.fileMinimumLevel;
                         fileSink.CategoryFilter = fileFilter;
+                        fileSink.MaxFileSizeBytes = settings.maxFileSizeBytes;
+                        fileSink.MaxArchiveFiles = settings.maxArchiveFiles;
+
+                        if (settings.fileLayoutType == LogLayoutType.Json)
+                        {
+                            if (fileSink.Layout is JsonLayout currentJson)
+                            {
+                                settings.fileJsonLayout.ApplyTo(currentJson);
+                            }
+                            else
+                            {
+                                fileSink.Layout = settings.fileJsonLayout.Build(appendNewline: true);
+                            }
+                        }
+                        else if (fileSink.Layout is not PatternLayout currentFilePattern ||
+                                 !string.Equals(currentFilePattern.Pattern, desiredFilePattern, StringComparison.Ordinal))
+                        {
+                            fileSink.Layout = new PatternLayout(desiredFilePattern, useColorTags: false);
+                        }
                         break;
                 }
             }
+        }
+
+        private static ILogLayout BuildFileLayout(LogLineSettings settings)
+        {
+            if (settings.fileLayoutType == LogLayoutType.Json)
+            {
+                return settings.fileJsonLayout.Build(appendNewline: true);
+            }
+
+            string filePattern = string.IsNullOrEmpty(settings.filePattern)
+                ? PatternLayout.DefaultFilePattern
+                : settings.filePattern;
+
+            return new PatternLayout(filePattern, useColorTags: false);
         }
 
         #endregion

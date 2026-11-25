@@ -1,0 +1,34 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements"
+         xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="True">
+    <ui:VisualElement class="ll-tab-root">
+        <!-- Category Prefix Overrides -->
+        <ui:VisualElement class="ll-card">
+            <ui:VisualElement class="ll-card-header">
+                <ui:Label text="Category Level Overrides" class="ll-card-title" />
+                <ui:Button name="add-rule-button" text="+ Add Rule" class="ll-small-button" />
+            </ui:VisualElement>
+            <ui:Label text="Matched case-insensitively by longest matching prefix (e.g. 'Combat.AI' overrides 'Combat')." class="ll-card-subtitle" />
+
+            <ui:VisualElement name="rules-list-container" />
+            <ui:Label name="rules-empty-label" text="No category override rules configured. All loggers inherit Global Minimum Level." class="ll-muted" />
+            <ui:Label name="rules-validation-summary" class="ll-inline-warn ll-hidden" />
+        </ui:VisualElement>
+
+        <!-- Rule Resolution Sandbox -->
+        <ui:VisualElement class="ll-card">
+            <ui:Label text="Resolution &amp; Sink Routing Tester" class="ll-card-title" />
+            <ui:Label text="Enter any logger category name to verify longest-prefix resolution and sink filters." class="ll-card-subtitle" />
+
+            <ui:TextField name="tester-input" label="Test Category" value="Combat.AI.Boss" class="ll-field" />
+            <ui:VisualElement name="tester-results-container" />
+        </ui:VisualElement>
+
+        <!-- Live Active Loggers in Play Mode -->
+        <ui:VisualElement class="ll-card">
+            <ui:Label text="Live Active Loggers (Play Mode)" class="ll-card-title" />
+            <ui:Label name="live-loggers-subtitle" text="Enter Play Mode to inspect active category loggers and create overrides with one click." class="ll-card-subtitle" />
+            <ui:VisualElement name="live-loggers-container" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

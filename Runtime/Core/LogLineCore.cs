@@ -108,6 +108,22 @@ namespace LogLine.Core
         }
 
         /// <summary>
+        /// Captures a point-in-time snapshot of all registered loggers and their effective minimum levels.
+        /// Intended for Editor diagnostics only; do not invoke on runtime hot paths.
+        /// </summary>
+        /// <returns>An array of category name and minimum level pairs.</returns>
+        internal static KeyValuePair<string, LogLevel>[] GetActiveLoggersSnapshot()
+        {
+            var result = new List<KeyValuePair<string, LogLevel>>(_loggers.Count);
+            foreach (KeyValuePair<string, Logger> entry in _loggers)
+            {
+                result.Add(new KeyValuePair<string, LogLevel>(entry.Key, entry.Value.MinimumLevel));
+            }
+
+            return result.ToArray();
+        }
+
+        /// <summary>
         /// Provides cached reflection metadata to eliminate runtime reflection overhead.
         /// </summary>
         /// <typeparam name="T">The cached type.</typeparam>

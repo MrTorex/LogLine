@@ -1,0 +1,56 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements"
+         xmlns:uie="UnityEditor.UIElements"
+         editor-extension-mode="True">
+    <ui:VisualElement name="dashboard-root" class="ll-root">
+        <!-- Header / Status Bar -->
+        <ui:VisualElement name="header-bar" class="ll-header">
+            <ui:VisualElement class="ll-header-left">
+                <ui:Label text="LogLine" class="ll-title" />
+                <ui:Label name="mode-badge" text="EDIT MODE" class="ll-badge ll-badge--neutral" />
+                <ui:Label name="compiled-badge" text="COMPILED: TRACE" class="ll-badge ll-badge--active" />
+            </ui:VisualElement>
+            <ui:VisualElement class="ll-header-actions">
+                <ui:Button name="reinit-button" text="Reinitialize Pipeline" class="ll-hidden" />
+                <ui:Button name="open-logs-button" text="Open Logs Folder" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Dynamic Warning Banners -->
+        <ui:VisualElement name="banner-stack" class="ll-banner-stack">
+            <ui:VisualElement name="asset-location-banner" class="ll-banner ll-banner--warning ll-hidden">
+                <ui:Label name="asset-location-text" class="ll-banner-text" />
+                <ui:Button name="move-to-resources-button" text="Move to Resources" />
+            </ui:VisualElement>
+            <ui:VisualElement name="compile-mismatch-banner" class="ll-banner ll-banner--warning ll-hidden">
+                <ui:Label name="compile-mismatch-text" class="ll-banner-text" />
+            </ui:VisualElement>
+            <ui:VisualElement name="reinit-required-banner" class="ll-banner ll-banner--info ll-hidden">
+                <ui:Label name="reinit-required-text" text="File sink path or enabled sinks changed during Play Mode. Click 'Reinitialize Pipeline' to rebuild streams." class="ll-banner-text" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Empty State (no LogLineSettings asset found) -->
+        <ui:VisualElement name="empty-state" class="ll-empty-state ll-hidden">
+            <ui:VisualElement class="ll-empty-card">
+                <ui:Label text="No LogLineSettings Asset Found" class="ll-empty-title" />
+                <ui:Label text="LogLine loads its configuration from 'Resources/LogLineSettings.asset' at startup. Create one now to configure levels, sinks, categories, and compilation defines." class="ll-empty-desc" />
+                <ui:Button name="create-settings-button" text="Create Assets/Resources/LogLineSettings.asset" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Main Workspace -->
+        <ui:VisualElement name="main-body" class="ll-body">
+            <ui:VisualElement name="sidebar" class="ll-sidebar">
+                <ui:VisualElement name="nav-container" />
+                <ui:VisualElement class="ll-sidebar-footer">
+                    <ui:Label name="asset-path-label" text="" class="ll-asset-path" />
+                    <ui:Button name="ping-asset-button" text="Select Asset" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:ScrollView name="content-scroll" class="ll-content-scroll">
+                <ui:VisualElement name="tab-content-host" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -34,6 +34,10 @@ namespace LogLine.Sinks
         private readonly string _baseFilePath;
         private readonly Encoding _encoding = new UTF8Encoding(false);
 
+        private volatile ILogLayout _layout;
+        private long _maxFileSizeBytes = 10 * 1024 * 1024;
+        private volatile int _maxArchiveFiles = 3;
+
         private FileStream _fileStream;
         private StreamWriter _writer;
         private volatile bool _isRunning = true;
@@ -59,19 +63,37 @@ namespace LogLine.Sinks
         public string ResolvedFilePath => _baseFilePath;
 
         /// <summary>
-        /// Gets or sets the active layout used to format events written to disk.
+        /// Gets the cumulative number of log events dropped due to internal ring buffer saturation.
         /// </summary>
-        public ILogLayout Layout { get; set; }
+        public int DroppedCount => _ringBuffer.DroppedCount;
+
+        /// <summary>
+        /// Gets or sets the active layout used to format events written to disk.
+        /// Swapped atomically for thread-safe runtime reconfiguration.
+        /// </summary>
+        public ILogLayout Layout
+        {
+            get => _layout;
+            set => _layout = value;
+        }
 
         /// <summary>
         /// Gets or sets the maximum size in bytes before the log file is rotated. Default is 10 MB.
         /// </summary>
-        public long MaxFileSizeBytes { get; set; } = 10 * 1024 * 1024;
+        public long MaxFileSizeBytes
+        {
+            get => Interlocked.Read(ref _maxFileSizeBytes);
+            set => Interlocked.Exchange(ref _maxFileSizeBytes, value > 0 ? value : 1);
+        }
 
         /// <summary>
         /// Gets or sets the maximum number of archived rotated log files to preserve.
         /// </summary>
-        public int MaxArchiveFiles { get; set; } = 3;
+        public int MaxArchiveFiles
+        {
+            get => _maxArchiveFiles;
+            set => _maxArchiveFiles = value < 0 ? 0 : value;
+        }
 
         #endregion
 
@@ -271,27 +293,39 @@ namespace LogLine.Sinks
 
         private void CheckFileRotation()
         {
-            if (_fileStream == null || _fileStream.Length < MaxFileSizeBytes)
+            long maxBytes = MaxFileSizeBytes;
+            if (_fileStream == null || _fileStream.Length < maxBytes)
             {
                 return;
             }
 
             CloseStream();
 
+            int maxArchives = MaxArchiveFiles;
             try
             {
-                for (int i = MaxArchiveFiles - 1; i >= 1; i--)
+                if (maxArchives <= 0)
                 {
-                    string oldPath = $"{_baseFilePath}.{i}";
-                    string newPath = $"{_baseFilePath}.{i + 1}";
-
-                    if (File.Exists(newPath)) File.Delete(newPath);
-                    if (File.Exists(oldPath)) File.Move(oldPath, newPath);
+                    if (File.Exists(_baseFilePath))
+                    {
+                        File.Delete(_baseFilePath);
+                    }
                 }
+                else
+                {
+                    for (int i = maxArchives - 1; i >= 1; i--)
+                    {
+                        string oldPath = $"{_baseFilePath}.{i}";
+                        string newPath = $"{_baseFilePath}.{i + 1}";
 
-                string firstArchive = $"{_baseFilePath}.1";
-                if (File.Exists(firstArchive)) File.Delete(firstArchive);
-                if (File.Exists(_baseFilePath)) File.Move(_baseFilePath, firstArchive);
+                        if (File.Exists(newPath)) File.Delete(newPath);
+                        if (File.Exists(oldPath)) File.Move(oldPath, newPath);
+                    }
+
+                    string firstArchive = $"{_baseFilePath}.1";
+                    if (File.Exists(firstArchive)) File.Delete(firstArchive);
+                    if (File.Exists(_baseFilePath)) File.Move(_baseFilePath, firstArchive);
+                }
             }
             catch (Exception ex)
             {

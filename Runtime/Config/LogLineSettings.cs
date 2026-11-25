@@ -22,6 +22,9 @@ namespace LogLine.Config
         [Tooltip("Automatically capture and redirect native Unity Debug.Log calls into the LogLine pipeline.")]
         public bool interceptUnityLogs = true;
 
+        [Tooltip("Automatically initialize LogLine during BeforeSceneLoad. Disable if initializing manually via DI or custom bootstrap.")]
+        public bool autoInitialize = true;
+
         #endregion
 
         #region Console Sink Settings
@@ -59,6 +62,9 @@ namespace LogLine.Config
 
         [Tooltip("Pattern template for log files (used when File Layout Type is Pattern). Example: %d{yyyy-MM-dd HH:mm:ss.fff} [%p] [%c] %m%ex%n")]
         public string filePattern = PatternLayout.DefaultFilePattern;
+
+        [Tooltip("Field toggles used when File Layout Type is set to Json.")]
+        public JsonLayoutConfig fileJsonLayout = JsonLayoutConfig.Default;
 
         public CategoryFilterConfig fileCategoryFilter = new()
         {
