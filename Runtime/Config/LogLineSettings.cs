@@ -54,7 +54,10 @@ namespace LogLine.Config
         public long maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
         public int maxArchiveFiles = 3;
 
-        [Tooltip("Pattern template for log files. Example: %d{yyyy-MM-dd HH:mm:ss.fff} [%p] [%c] %m%ex%n")]
+        [Tooltip("Selects between human-readable PatternLayout and structured NDJSON JsonLayout.")]
+        public LogLayoutType fileLayoutType = LogLayoutType.Pattern;
+
+        [Tooltip("Pattern template for log files (used when File Layout Type is Pattern). Example: %d{yyyy-MM-dd HH:mm:ss.fff} [%p] [%c] %m%ex%n")]
         public string filePattern = PatternLayout.DefaultFilePattern;
 
         public CategoryFilterConfig fileCategoryFilter = new()
