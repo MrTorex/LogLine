@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using LogLine.Buffering;
 using UnityEngine;
 
@@ -9,7 +10,7 @@ namespace LogLine.Core
     /// Internal engine for sink management, logger resolution, and zero-allocation dispatching.
     /// Not accessible directly outside the assembly; use <see cref="LogLine"/> facade.
     /// </summary>
-    public static class LogLineCore
+    internal static class LogLineCore
     {
         #region Private Fields
 
@@ -21,7 +22,8 @@ namespace LogLine.Core
         // Cache of all active logger instances organized by category name.
         private static readonly ConcurrentDictionary<string, Logger> _loggers = new(StringComparer.OrdinalIgnoreCase);
 
-        // Prevents circular recursion if a sink invokes Unity's Debug.Log during dispatch.
+        // Optional resolver used to assign initial levels atomically upon logger creation.
+        private static volatile Func<string, LogLevel> _categoryLevelResolver;
 
         #endregion
 
@@ -44,22 +46,30 @@ namespace LogLine.Core
         #region Domain Reload Safety
 
         /// <summary>
-        /// Guarantees zero memory leaks and thread safety when Domain Reload is disabled in Unity.
+        /// Resets engine state without evicting cached logger instances, preserving references
+        /// held by static fields in user code when Domain Reload is disabled.
+        /// Invoked deterministically by <see cref="LogLine"/> during SubsystemRegistration.
         /// </summary>
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStaticState()
+        internal static void ResetStaticState()
         {
             lock (_syncLock)
             {
                 DisposeAllSinksInternal();
-                _loggers.Clear();
+                _categoryLevelResolver = null;
                 GlobalMinimumLevel = LogLevel.Trace;
+                RefreshLoggerLevels(null);
             }
         }
 
         #endregion
 
-        #region Logger Factory
+        #region Logger Factory & Level Invalidation
+
+        /// <summary>
+        /// Sets the category level resolver delegate used when instantiating new loggers.
+        /// </summary>
+        /// <param name="resolver">The resolution function, or <see langword="null"/> to use <see cref="GlobalMinimumLevel"/>.</param>
+        public static void SetCategoryLevelResolver(Func<string, LogLevel> resolver) => _categoryLevelResolver = resolver;
 
         /// <summary>
         /// Resolves or registers a category-bound logger instance.
@@ -69,7 +79,12 @@ namespace LogLine.Core
         public static Logger GetLogger(string category)
         {
             string key = string.IsNullOrEmpty(category) ? "Global" : category;
-            return _loggers.GetOrAdd(key, static (name) => new Logger(name, GlobalMinimumLevel));
+            return _loggers.GetOrAdd(key, static name =>
+            {
+                Func<string, LogLevel> resolver = _categoryLevelResolver;
+                LogLevel initialLevel = resolver?.Invoke(name) ?? GlobalMinimumLevel;
+                return new Logger(name, initialLevel);
+            });
         }
 
         /// <summary>
@@ -78,6 +93,35 @@ namespace LogLine.Core
         /// <typeparam name="T">The type to infer category name from.</typeparam>
         /// <returns>A thread-safe <see cref="Logger"/> instance.</returns>
         public static Logger GetLogger<T>() => GetLogger(TypeCache<T>.Name);
+
+        /// <summary>
+        /// Re-evaluates and atomically updates the cached minimum log level for all active loggers.
+        /// </summary>
+        /// <param name="resolver">Optional resolver function. Falls back to <see cref="GlobalMinimumLevel"/> if null.</param>
+        public static void RefreshLoggerLevels(Func<string, LogLevel> resolver)
+        {
+            foreach (KeyValuePair<string, Logger> entry in _loggers)
+            {
+                LogLevel newLevel = resolver?.Invoke(entry.Key) ?? GlobalMinimumLevel;
+                entry.Value.SetMinimumLevel(newLevel);
+            }
+        }
+
+        /// <summary>
+        /// Captures a point-in-time snapshot of all registered loggers and their effective minimum levels.
+        /// Intended for Editor diagnostics only; do not invoke on runtime hot paths.
+        /// </summary>
+        /// <returns>An array of category name and minimum level pairs.</returns>
+        internal static KeyValuePair<string, LogLevel>[] GetActiveLoggersSnapshot()
+        {
+            var result = new List<KeyValuePair<string, LogLevel>>(_loggers.Count);
+            foreach (KeyValuePair<string, Logger> entry in _loggers)
+            {
+                result.Add(new KeyValuePair<string, LogLevel>(entry.Key, entry.Value.MinimumLevel));
+            }
+
+            return result.ToArray();
+        }
 
         /// <summary>
         /// Provides cached reflection metadata to eliminate runtime reflection overhead.
@@ -139,6 +183,23 @@ namespace LogLine.Core
         }
 
         /// <summary>
+        /// Removes and disposes all currently registered sinks in a thread-safe manner.
+        /// </summary>
+        public static void ClearSinks()
+        {
+            lock (_syncLock)
+            {
+                DisposeAllSinksInternal();
+            }
+        }
+
+        /// <summary>
+        /// Returns the current immutable snapshot of registered sinks for configuration inspection.
+        /// </summary>
+        /// <returns>The active sink array snapshot.</returns>
+        public static ILogSink[] GetSinksSnapshot() => _activeSinks;
+
+        /// <summary>
         /// Disposes all registered sinks and clears the active sinks collection.
         /// </summary>
         private static void DisposeAllSinksInternal()
@@ -146,8 +207,9 @@ namespace LogLine.Core
             ILogSink[] oldSinks = _activeSinks;
             _activeSinks = Array.Empty<ILogSink>();
 
-            foreach (ILogSink t in oldSinks)
+            for (int i = 0; i < oldSinks.Length; i++)
             {
+                ILogSink t = oldSinks[i];
                 try
                 {
                     t?.Dispose();
@@ -385,15 +447,29 @@ namespace LogLine.Core
             IsDispatching = true;
             try
             {
-                foreach (ILogSink sink in sinks)
+                for (int i = 0; i < sinks.Length; i++)
                 {
-                    if (!sink.IsEnabled || logEvent.Level < sink.MinimumLevel)
-                    {
-                        continue;
-                    }
+                    ILogSink sink = sinks[i];
 
                     try
                     {
+                        if (sink is LogSinkBase baseSink)
+                        {
+                            baseSink.Emit(in logEvent);
+                            continue;
+                        }
+
+                        if (!sink.IsEnabled || logEvent.Level < sink.MinimumLevel)
+                        {
+                            continue;
+                        }
+
+                        CategoryFilter filter = sink.CategoryFilter;
+                        if (filter != null && !filter.IsMatch(logEvent.LoggerName))
+                        {
+                            continue;
+                        }
+
                         sink.Emit(in logEvent);
                     }
                     catch (Exception sinkEx)

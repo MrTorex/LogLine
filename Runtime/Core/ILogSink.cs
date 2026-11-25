@@ -25,6 +25,12 @@ namespace LogLine.Core
         /// </summary>
         LogLevel MinimumLevel { get; set; }
 
+        /// <summary>
+        /// Gets or sets an optional immutable category filter for sink-level routing.
+        /// When <see langword="null"/>, all categories are accepted.
+        /// </summary>
+        CategoryFilter CategoryFilter { get; set; }
+
         #endregion
 
         #region Emission

@@ -1,11 +1,15 @@
 using System;
 using System.Buffers;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace LogLine.Buffering
 {
     /// <summary>
     /// High-performance zero-allocation string formatter operating on stack buffers and Span&lt;char&gt;.
-    /// Avoids object boxing for common primitive value types in C# 9.
+    /// Uses <see cref="UnsafeUtility.As{TFrom,TTo}(ref TFrom)"/> with compile-time type identity checks
+    /// to eliminate IL boxing instructions across both Mono and IL2CPP.
     /// </summary>
     public static class FastFormatter
     {
@@ -20,6 +24,10 @@ namespace LogLine.Buffering
         /// <summary>
         /// Formats a pattern with one generic argument without heap boxing.
         /// </summary>
+        /// <typeparam name="T1">The type of the first argument.</typeparam>
+        /// <param name="format">The composite format template.</param>
+        /// <param name="arg1">The first argument.</param>
+        /// <returns>The formatted string.</returns>
         public static string Format<T1>(string format, in T1 arg1)
         {
             if (string.IsNullOrEmpty(format)) return string.Empty;
@@ -41,6 +49,12 @@ namespace LogLine.Buffering
         /// <summary>
         /// Formats a pattern with two generic arguments without heap boxing.
         /// </summary>
+        /// <typeparam name="T1">The type of the first argument.</typeparam>
+        /// <typeparam name="T2">The type of the second argument.</typeparam>
+        /// <param name="format">The composite format template.</param>
+        /// <param name="arg1">The first argument.</param>
+        /// <param name="arg2">The second argument.</param>
+        /// <returns>The formatted string.</returns>
         public static string Format<T1, T2>(string format, in T1 arg1, in T2 arg2)
         {
             if (string.IsNullOrEmpty(format)) return string.Empty;
@@ -62,6 +76,14 @@ namespace LogLine.Buffering
         /// <summary>
         /// Formats a pattern with three generic arguments without heap boxing.
         /// </summary>
+        /// <typeparam name="T1">The type of the first argument.</typeparam>
+        /// <typeparam name="T2">The type of the second argument.</typeparam>
+        /// <typeparam name="T3">The type of the third argument.</typeparam>
+        /// <param name="format">The composite format template.</param>
+        /// <param name="arg1">The first argument.</param>
+        /// <param name="arg2">The second argument.</param>
+        /// <param name="arg3">The third argument.</param>
+        /// <returns>The formatted string.</returns>
         public static string Format<T1, T2, T3>(string format, in T1 arg1, in T2 arg2, in T3 arg3)
         {
             if (string.IsNullOrEmpty(format)) return string.Empty;
@@ -194,31 +216,83 @@ namespace LogLine.Buffering
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void AppendValue<T>(ref BufferWriter writer, in T value)
         {
-            switch (value)
+            if (typeof(T) == typeof(int))
             {
-                // Type tests against primitive types do not allocate boxing overhead in modern Roslyn/IL2CPP.
-                case int intVal:
-                    writer.Append(intVal);
-                    return;
-                case float floatVal:
-                    writer.Append(floatVal);
-                    return;
-                case bool boolVal:
-                    writer.Append(boolVal ? "True" : "False");
-                    return;
-                case long longVal:
-                    writer.Append(longVal);
-                    return;
-                case string strVal:
-                    writer.Append(strVal);
-                    return;
-                default:
-                    // Fallback for custom reference or struct types (calls constrained ToString)
-                    writer.Append(value?.ToString() ?? "null");
-                    break;
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, int>(ref local));
+                return;
             }
+
+            if (typeof(T) == typeof(float))
+            {
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, float>(ref local));
+                return;
+            }
+
+            if (typeof(T) == typeof(bool))
+            {
+                T local = value;
+                bool boolVal = UnsafeUtility.As<T, bool>(ref local);
+                writer.Append(boolVal ? "True" : "False");
+                return;
+            }
+
+            if (typeof(T) == typeof(long))
+            {
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, long>(ref local));
+                return;
+            }
+
+            if (typeof(T) == typeof(double))
+            {
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, double>(ref local));
+                return;
+            }
+
+            if (typeof(T) == typeof(uint))
+            {
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, uint>(ref local));
+                return;
+            }
+
+            if (typeof(T) == typeof(ulong))
+            {
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, ulong>(ref local));
+                return;
+            }
+
+            if (typeof(T) == typeof(byte))
+            {
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, byte>(ref local));
+                return;
+            }
+
+            if (typeof(T) == typeof(short))
+            {
+                T local = value;
+                writer.Append(UnsafeUtility.As<T, short>(ref local));
+                return;
+            }
+
+            if (typeof(T) == typeof(string))
+            {
+                T local = value;
+                string strVal = UnsafeUtility.As<T, string>(ref local);
+                writer.Append(strVal ?? "null");
+                return;
+            }
+
+            // Fallback for custom reference or struct types (uses constrained ToString in IL)
+            writer.Append(value?.ToString() ?? "null");
         }
 
         #endregion
@@ -272,14 +346,25 @@ namespace LogLine.Buffering
                     if (value.TryFormat(slice, out int charsWritten))
                     {
                         _position += charsWritten;
-                    }
-                    else
-                    {
-                        Grow(_position + 16);
-                        continue;
+                        break;
                     }
 
-                    break;
+                    Grow(_position + 16);
+                }
+            }
+
+            public void Append(uint value)
+            {
+                while (true)
+                {
+                    Span<char> slice = _buffer[_position..];
+                    if (value.TryFormat(slice, out int charsWritten))
+                    {
+                        _position += charsWritten;
+                        break;
+                    }
+
+                    Grow(_position + 16);
                 }
             }
 
@@ -288,17 +373,28 @@ namespace LogLine.Buffering
                 while (true)
                 {
                     Span<char> slice = _buffer[_position..];
-                    if (value.TryFormat(slice, out int charsWritten))
+                    if (value.TryFormat(slice, out int charsWritten, provider: CultureInfo.InvariantCulture))
                     {
                         _position += charsWritten;
-                    }
-                    else
-                    {
-                        Grow(_position + 32);
-                        continue;
+                        break;
                     }
 
-                    break;
+                    Grow(_position + 32);
+                }
+            }
+
+            public void Append(double value)
+            {
+                while (true)
+                {
+                    Span<char> slice = _buffer[_position..];
+                    if (value.TryFormat(slice, out int charsWritten, provider: CultureInfo.InvariantCulture))
+                    {
+                        _position += charsWritten;
+                        break;
+                    }
+
+                    Grow(_position + 32);
                 }
             }
 
@@ -310,14 +406,25 @@ namespace LogLine.Buffering
                     if (value.TryFormat(slice, out int charsWritten))
                     {
                         _position += charsWritten;
-                    }
-                    else
-                    {
-                        Grow(_position + 24);
-                        continue;
+                        break;
                     }
 
-                    break;
+                    Grow(_position + 24);
+                }
+            }
+
+            public void Append(ulong value)
+            {
+                while (true)
+                {
+                    Span<char> slice = _buffer[_position..];
+                    if (value.TryFormat(slice, out int charsWritten))
+                    {
+                        _position += charsWritten;
+                        break;
+                    }
+
+                    Grow(_position + 24);
                 }
             }
 

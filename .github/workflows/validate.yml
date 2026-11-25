@@ -1,0 +1,33 @@
+name: Validate Package
+
+on:
+  pull_request:
+    branches:
+      - development
+      - main
+  push:
+    branches:
+      - development
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: UPM Package Integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate package structure, JSON, and .meta files
+        run: python3 .github/scripts/validate_package.py

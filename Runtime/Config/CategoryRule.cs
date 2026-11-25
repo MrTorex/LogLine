@@ -9,13 +9,13 @@ namespace LogLine.Config
     [Serializable]
     public struct CategoryRule
     {
-        public string CategoryPrefix;
-        public LogLevel MinimumLevel;
+        public string categoryPrefix;
+        public LogLevel minimumLevel;
 
         public CategoryRule(string categoryPrefix, LogLevel minimumLevel)
         {
-            CategoryPrefix = categoryPrefix;
-            MinimumLevel = minimumLevel;
+            this.categoryPrefix = categoryPrefix;
+            this.minimumLevel = minimumLevel;
         }
     }
 }

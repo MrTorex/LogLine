@@ -1,21 +1,35 @@
 using System;
 using LogLine.Core;
 using UnityEngine;
+using Logger = LogLine.Core.Logger;
 
 namespace LogLine.Interceptors
 {
     /// <summary>
     /// Intercepts native Unity <see cref="Debug.Log(object)"/> invocations and redirects them into LogLine.
     /// </summary>
-    public sealed class UnityLogInterceptor : ILogHandler, IDisposable
+    internal sealed class UnityLogInterceptor : ILogHandler, IDisposable
     {
         #region Private Fields
 
+        private static volatile ILogHandler _activeOriginalHandler;
+
         private readonly ILogHandler _originalHandler;
+        private readonly Logger _unityLogger;
         private bool _isDisposed;
 
         [ThreadStatic]
         private static bool _isProcessingNativeCall;
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets the original native Unity <see cref="ILogHandler"/> captured before interception,
+        /// allowing internal sinks to bypass the interceptor directly.
+        /// </summary>
+        internal static ILogHandler OriginalHandler => _activeOriginalHandler;
 
         #endregion
 
@@ -26,7 +40,9 @@ namespace LogLine.Interceptors
         /// </summary>
         public UnityLogInterceptor()
         {
+            _unityLogger = LogLineCore.GetLogger("Unity");
             _originalHandler = Debug.unityLogger.logHandler;
+            _activeOriginalHandler = _originalHandler;
             Debug.unityLogger.logHandler = this;
         }
 
@@ -45,13 +61,18 @@ namespace LogLine.Interceptors
                 return;
             }
 
+            LogLevel level = ConvertLogType(logType);
+            if (!_unityLogger.IsEnabled(level))
+            {
+                return;
+            }
+
             _isProcessingNativeCall = true;
             try
             {
-                LogLevel level = ConvertLogType(logType);
                 string message = args == null || args.Length == 0 ? format : string.Format(format, args);
 
-                LogLineCore.Dispatch(level, "Unity", message, null, context);
+                LogLineCore.Dispatch(level, _unityLogger.Name, message, null, context);
             }
             catch (Exception ex)
             {
@@ -73,13 +94,15 @@ namespace LogLine.Interceptors
                 return;
             }
 
+            if (exception == null || !_unityLogger.IsEnabled(LogLevel.Fatal))
+            {
+                return;
+            }
+
             _isProcessingNativeCall = true;
             try
             {
-                if (exception != null)
-                {
-                    LogLineCore.Dispatch(LogLevel.Fatal, "Unity", exception.Message, exception, context);
-                }
+                LogLineCore.Dispatch(LogLevel.Fatal, _unityLogger.Name, exception.Message, exception, context);
             }
             catch (Exception ex)
             {
@@ -100,6 +123,11 @@ namespace LogLine.Interceptors
         {
             if (_isDisposed) return;
             _isDisposed = true;
+
+            if (ReferenceEquals(_activeOriginalHandler, _originalHandler))
+            {
+                _activeOriginalHandler = null;
+            }
 
             if (Debug.unityLogger.logHandler == this)
             {
