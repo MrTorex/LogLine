@@ -43,6 +43,8 @@ namespace LogLine.Sinks
         private bool _hasUnflushedData;
         private long _lastFlushTimestamp;
 
+        private long _unflushedChars;
+
         #endregion
 
         #region Properties
@@ -215,6 +217,7 @@ namespace LogLine.Sinks
                 {
                     _writer.Flush();
                     _hasUnflushedData = false;
+                    _unflushedChars = 0;
                     _lastFlushTimestamp = now;
                 }
             }
@@ -229,6 +232,7 @@ namespace LogLine.Sinks
             if (layout.TryFormat(in logEvent, formatBuffer, out int charsWritten))
             {
                 _writer.Write(formatBuffer[..charsWritten]);
+                _unflushedChars += charsWritten;
                 return;
             }
 
@@ -245,6 +249,7 @@ namespace LogLine.Sinks
                 }
 
                 _writer.Write(rented.AsSpan(0, charsWritten));
+                _unflushedChars += charsWritten;
             }
             finally
             {
@@ -285,13 +290,33 @@ namespace LogLine.Sinks
             {
                 _writer = null;
                 _fileStream = null;
+                _hasUnflushedData = false;
+                _unflushedChars = 0;
             }
         }
 
         private void CheckFileRotation()
         {
+            if (_fileStream == null)
+            {
+                return;
+            }
+
             long maxBytes = MaxFileSizeBytes;
-            if (_fileStream == null || _fileStream.Length < maxBytes)
+            if (_fileStream.Length + _unflushedChars < maxBytes)
+            {
+                return;
+            }
+
+            if (_hasUnflushedData && _writer != null)
+            {
+                _writer.Flush();
+                _hasUnflushedData = false;
+                _unflushedChars = 0;
+                _lastFlushTimestamp = Stopwatch.GetTimestamp();
+            }
+
+            if (_fileStream.Length < maxBytes)
             {
                 return;
             }
