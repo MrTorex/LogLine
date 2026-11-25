@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace LogLine.Core
@@ -62,8 +63,22 @@ namespace LogLine.Core
 
         /// <inheritdoc />
         [HideInCallstack]
-        public bool IsEnabled(LogLevel level) =>
-            level >= LogLineDefines.CompiledMinimumLevel && (int)level >= _cachedMinimumLevel;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsEnabled(LogLevel level)
+        {
+            if (level == LogLevel.None)
+            {
+                return false;
+            }
+
+#if LOGLINE_MIN_TRACE
+            return (int)level >= _cachedMinimumLevel;
+#elif LOGLINE_MIN_DEBUG || LOGLINE_MIN_INFO || LOGLINE_MIN_WARN || LOGLINE_MIN_ERROR || LOGLINE_MIN_FATAL
+            return level >= LogLineDefines.CompiledMinimumLevel && (int)level >= _cachedMinimumLevel;
+#else
+            return false;
+#endif
+        }
 
         #endregion
 

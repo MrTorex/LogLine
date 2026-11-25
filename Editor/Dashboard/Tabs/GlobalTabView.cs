@@ -60,7 +60,7 @@ namespace LogLine.Editor.Dashboard.Tabs
         /// </summary>
         public GlobalTabView()
         {
-            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+            VisualTreeAsset tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
             if (tree != null)
             {
                 Root = tree.Instantiate();
@@ -196,9 +196,7 @@ namespace LogLine.Editor.Dashboard.Tabs
             var keyLabel = new Label(key);
             keyLabel.AddToClassList("ll-diag-key");
 
-            var valLabel = new Label(value);
-            valLabel.style.whiteSpace = WhiteSpace.Normal;
-            valLabel.style.flexShrink = 1;
+            var valLabel = new Label(value) { style = { whiteSpace = WhiteSpace.Normal, flexShrink = 1 } };
 
             row.Add(keyLabel);
             row.Add(valLabel);

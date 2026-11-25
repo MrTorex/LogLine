@@ -31,7 +31,6 @@ namespace LogLine.Sinks
         private readonly LogRingBuffer _ringBuffer;
         private readonly AutoResetEvent _signal = new(false);
         private readonly Thread _workerThread;
-        private readonly string _baseFilePath;
         private readonly Encoding _encoding = new UTF8Encoding(false);
 
         private volatile ILogLayout _layout;
@@ -40,7 +39,6 @@ namespace LogLine.Sinks
 
         private FileStream _fileStream;
         private StreamWriter _writer;
-        private volatile bool _isRunning = true;
         private int _lastLoggedDroppedCount;
         private bool _hasUnflushedData;
         private long _lastFlushTimestamp;
@@ -60,7 +58,7 @@ namespace LogLine.Sinks
         /// <summary>
         /// Gets the fully resolved absolute file path currently written to by this sink.
         /// </summary>
-        public string ResolvedFilePath => _baseFilePath;
+        public string ResolvedFilePath { get; }
 
         /// <summary>
         /// Gets the cumulative number of log events dropped due to internal ring buffer saturation.
@@ -113,11 +111,11 @@ namespace LogLine.Sinks
             FilePathTemplate = string.IsNullOrWhiteSpace(filePath)
                 ? FilePathResolver.DefaultFilePathTemplate
                 : filePath;
-            _baseFilePath = FilePathResolver.Resolve(FilePathTemplate);
+            ResolvedFilePath = FilePathResolver.Resolve(FilePathTemplate);
             Layout = layout ?? new PatternLayout(PatternLayout.DefaultFilePattern, useColorTags: false);
             _ringBuffer = new LogRingBuffer(ringBufferCapacity);
 
-            EnsureDirectoryExists(_baseFilePath);
+            EnsureDirectoryExists(ResolvedFilePath);
             OpenStream();
 
             _workerThread = new Thread(WorkerLoop)
@@ -146,7 +144,6 @@ namespace LogLine.Sinks
         /// <inheritdoc />
         protected override void OnDispose()
         {
-            _isRunning = false;
             _signal.Set();
 
             if (_workerThread is { IsAlive: true })
@@ -168,7 +165,7 @@ namespace LogLine.Sinks
             long flushIntervalTicks = (long)(Stopwatch.Frequency * (FlushIntervalMs / 1000.0));
             _lastFlushTimestamp = Stopwatch.GetTimestamp();
 
-            while (_isRunning)
+            while (!IsDisposed)
             {
                 bool signaled = _signal.WaitOne(FlushIntervalMs);
                 DrainQueue(formatBuffer, flushIntervalTicks, timedOut: !signaled);
@@ -262,7 +259,7 @@ namespace LogLine.Sinks
         private void OpenStream()
         {
             _fileStream = new FileStream(
-                _baseFilePath,
+                ResolvedFilePath,
                 FileMode.Append,
                 FileAccess.Write,
                 FileShare.ReadWrite,
@@ -306,25 +303,25 @@ namespace LogLine.Sinks
             {
                 if (maxArchives <= 0)
                 {
-                    if (File.Exists(_baseFilePath))
+                    if (File.Exists(ResolvedFilePath))
                     {
-                        File.Delete(_baseFilePath);
+                        File.Delete(ResolvedFilePath);
                     }
                 }
                 else
                 {
                     for (int i = maxArchives - 1; i >= 1; i--)
                     {
-                        string oldPath = $"{_baseFilePath}.{i}";
-                        string newPath = $"{_baseFilePath}.{i + 1}";
+                        string oldPath = $"{ResolvedFilePath}.{i}";
+                        string newPath = $"{ResolvedFilePath}.{i + 1}";
 
                         if (File.Exists(newPath)) File.Delete(newPath);
                         if (File.Exists(oldPath)) File.Move(oldPath, newPath);
                     }
 
-                    string firstArchive = $"{_baseFilePath}.1";
+                    string firstArchive = $"{ResolvedFilePath}.1";
                     if (File.Exists(firstArchive)) File.Delete(firstArchive);
-                    if (File.Exists(_baseFilePath)) File.Move(_baseFilePath, firstArchive);
+                    if (File.Exists(ResolvedFilePath)) File.Move(ResolvedFilePath, firstArchive);
                 }
             }
             catch (Exception ex)

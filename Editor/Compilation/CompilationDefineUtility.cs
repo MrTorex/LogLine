@@ -266,7 +266,7 @@ namespace LogLine.Editor.Compilation
 
             if (!CompilationDefineUtility.TryGetThreshold(target, out _))
             {
-                UnityEngine.Debug.LogWarning(
+                Debug.LogWarning(
                     $"[LogLine] Build target '{target.TargetName}' has no LOGLINE_MIN_* scripting define symbol configured. " +
                     "All LogLine call sites will be stripped in this build. Configure a threshold in LogLineSettings.");
             }

@@ -192,7 +192,7 @@ namespace LogLine.Layouts
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool TryWriteRaw(ReadOnlySpan<char> text)
+            private bool TryWriteRaw(ReadOnlySpan<char> text)
             {
                 if (text.Length > _destination.Length - Position)
                 {
@@ -238,12 +238,7 @@ namespace LogLine.Layouts
                     return false;
                 }
 
-                if (!TryWriteEscapedContent(value))
-                {
-                    return false;
-                }
-
-                return TryWriteChar('"');
+                return TryWriteEscapedContent(value) && TryWriteChar('"');
             }
 
             public bool TryWriteIntProperty(ReadOnlySpan<char> propertyName, int value)

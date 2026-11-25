@@ -46,7 +46,7 @@ namespace LogLine
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoInitialize()
         {
-            var settings = Resources.Load<LogLineSettings>("LogLineSettings");
+            LogLineSettings settings = Resources.Load<LogLineSettings>("LogLineSettings");
             if (settings != null && !settings.autoInitialize)
             {
                 Settings = settings;
@@ -171,14 +171,15 @@ namespace LogLine
 
             lock (_syncLock)
             {
-                if (settings.interceptUnityLogs && _interceptor == null)
+                switch (settings.interceptUnityLogs)
                 {
-                    _interceptor = new UnityLogInterceptor();
-                }
-                else if (!settings.interceptUnityLogs && _interceptor != null)
-                {
-                    _interceptor.Dispose();
-                    _interceptor = null;
+                    case true when _interceptor == null:
+                        _interceptor = new UnityLogInterceptor();
+                        break;
+                    case false when _interceptor != null:
+                        _interceptor.Dispose();
+                        _interceptor = null;
+                        break;
                 }
             }
 

@@ -1,5 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements"
-         xmlns:uie="UnityEditor.UIElements"
          editor-extension-mode="True">
     <ui:VisualElement name="dashboard-root" class="ll-root">
         <!-- Header / Status Bar -->
@@ -43,7 +42,7 @@
             <ui:VisualElement name="sidebar" class="ll-sidebar">
                 <ui:VisualElement name="nav-container" />
                 <ui:VisualElement class="ll-sidebar-footer">
-                    <ui:Label name="asset-path-label" text="" class="ll-asset-path" />
+                    <ui:Label name="asset-path-label" class="ll-asset-path" />
                     <ui:Button name="ping-asset-button" text="Select Asset" />
                 </ui:VisualElement>
             </ui:VisualElement>

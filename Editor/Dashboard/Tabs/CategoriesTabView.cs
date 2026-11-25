@@ -85,7 +85,7 @@ namespace LogLine.Editor.Dashboard.Tabs
         /// </summary>
         public CategoriesTabView()
         {
-            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+            VisualTreeAsset tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
             if (tree != null)
             {
                 Root = tree.Instantiate();
@@ -145,7 +145,7 @@ namespace LogLine.Editor.Dashboard.Tabs
                 return;
             }
 
-            int currentCount = settings.categoryRules != null ? settings.categoryRules.Count : 0;
+            int currentCount = settings.categoryRules?.Count ?? 0;
             if (currentCount != _lastBuiltRuleCount)
             {
                 RebuildRulesList();
@@ -178,18 +178,25 @@ namespace LogLine.Editor.Dashboard.Tabs
             }
 
             _serializedSettings.Update();
-            SerializedProperty rulesProp = _serializedSettings.FindProperty("categoryRules");
-            int count = rulesProp != null ? rulesProp.arraySize : 0;
-            _lastBuiltRuleCount = count;
 
+            SerializedProperty rulesProp = _serializedSettings.FindProperty("categoryRules");
+            if (rulesProp == null)
+            {
+                _lastBuiltRuleCount = 0;
+                _rulesEmptyLabel?.RemoveFromClassList("ll-hidden");
+                return;
+            }
+
+            int count = rulesProp.arraySize;
+            _lastBuiltRuleCount = count;
             _rulesEmptyLabel?.EnableInClassList("ll-hidden", count > 0);
 
             for (int i = 0; i < count; i++)
             {
                 int rowIndex = i;
                 SerializedProperty elementProp = rulesProp.GetArrayElementAtIndex(i);
-                SerializedProperty prefixProp = elementProp.FindPropertyRelative("CategoryPrefix");
-                SerializedProperty levelProp = elementProp.FindPropertyRelative("MinimumLevel");
+                SerializedProperty prefixProp = elementProp.FindPropertyRelative("categoryPrefix");
+                SerializedProperty levelProp = elementProp.FindPropertyRelative("minimumLevel");
 
                 var row = new VisualElement();
                 row.AddToClassList("ll-rule-row");
@@ -250,8 +257,8 @@ namespace LogLine.Editor.Dashboard.Tabs
             rulesProp.InsertArrayElementAtIndex(insertIndex);
 
             SerializedProperty newElement = rulesProp.GetArrayElementAtIndex(insertIndex);
-            newElement.FindPropertyRelative("CategoryPrefix").stringValue = defaultPrefix ?? string.Empty;
-            newElement.FindPropertyRelative("MinimumLevel").intValue = (int)defaultLevel;
+            newElement.FindPropertyRelative("categoryPrefix").stringValue = defaultPrefix ?? string.Empty;
+            newElement.FindPropertyRelative("minimumLevel").intValue = (int)defaultLevel;
 
             _serializedSettings.ApplyModifiedProperties();
 
@@ -310,7 +317,7 @@ namespace LogLine.Editor.Dashboard.Tabs
                 badge.RemoveFromClassList("ll-badge--error");
                 badge.RemoveFromClassList("ll-badge--neutral");
 
-                if (string.IsNullOrWhiteSpace(rule.CategoryPrefix))
+                if (string.IsNullOrWhiteSpace(rule.categoryPrefix))
                 {
                     emptyCount++;
                     badge.text = "EMPTY";
@@ -318,7 +325,7 @@ namespace LogLine.Editor.Dashboard.Tabs
                     badge.AddToClassList("ll-badge--error");
                     badge.RemoveFromClassList("ll-hidden");
                 }
-                else if (!seenPrefixes.Add(rule.CategoryPrefix))
+                else if (!seenPrefixes.Add(rule.categoryPrefix))
                 {
                     duplicateCount++;
                     badge.text = "DUP";
@@ -326,11 +333,11 @@ namespace LogLine.Editor.Dashboard.Tabs
                     badge.AddToClassList("ll-badge--warn");
                     badge.RemoveFromClassList("ll-hidden");
                 }
-                else if (rule.MinimumLevel < compiledMin)
+                else if (rule.minimumLevel < compiledMin)
                 {
                     compileClampedCount++;
                     badge.text = $"MIN {compiledMin.ToString().ToUpperInvariant()}";
-                    badge.tooltip = $"Compile define strips levels below {compiledMin}; rule level {rule.MinimumLevel} is clamped.";
+                    badge.tooltip = $"Compile define strips levels below {compiledMin}; rule level {rule.minimumLevel} is clamped.";
                     badge.AddToClassList("ll-badge--neutral");
                     badge.RemoveFromClassList("ll-hidden");
                 }
@@ -421,17 +428,17 @@ namespace LogLine.Editor.Dashboard.Tabs
             for (int i = 0; i < settings.categoryRules.Count; i++)
             {
                 CategoryRule rule = settings.categoryRules[i];
-                if (string.IsNullOrEmpty(rule.CategoryPrefix))
+                if (string.IsNullOrEmpty(rule.categoryPrefix))
                 {
                     continue;
                 }
 
-                int len = rule.CategoryPrefix.Length;
+                int len = rule.categoryPrefix.Length;
                 if (len > bestLength &&
-                    category.StartsWith(rule.CategoryPrefix, StringComparison.OrdinalIgnoreCase))
+                    category.StartsWith(rule.categoryPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     bestLength = len;
-                    winner = rule.CategoryPrefix;
+                    winner = rule.categoryPrefix;
                 }
             }
 
@@ -446,9 +453,7 @@ namespace LogLine.Editor.Dashboard.Tabs
             var keyLabel = new Label(key);
             keyLabel.AddToClassList("ll-diag-key");
 
-            var valLabel = new Label(value);
-            valLabel.style.whiteSpace = WhiteSpace.Normal;
-            valLabel.style.flexShrink = 1;
+            var valLabel = new Label(value) { style = { whiteSpace = WhiteSpace.Normal, flexShrink = 1 } };
 
             row.Add(keyLabel);
             row.Add(valLabel);
@@ -491,7 +496,7 @@ namespace LogLine.Editor.Dashboard.Tabs
             for (int i = 0; i < active.Length; i++)
             {
                 string name = active[i].Key;
-                bool hasExactRule = HasExactRule(settings, name);
+                bool hasExactRule = ContainsExactRule(settings, name);
                 nextSnapshot.Add(new LiveLoggerRowSignature(name, active[i].Value, hasExactRule));
             }
 
@@ -545,7 +550,7 @@ namespace LogLine.Editor.Dashboard.Tabs
             }
         }
 
-        private static bool HasExactRule(LogLineSettings settings, string category)
+        private static bool ContainsExactRule(LogLineSettings settings, string category)
         {
             if (settings.categoryRules == null)
             {
@@ -554,7 +559,7 @@ namespace LogLine.Editor.Dashboard.Tabs
 
             for (int i = 0; i < settings.categoryRules.Count; i++)
             {
-                if (string.Equals(settings.categoryRules[i].CategoryPrefix, category, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(settings.categoryRules[i].categoryPrefix, category, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

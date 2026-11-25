@@ -1,11 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements"
-         xmlns:uie="UnityEditor.UIElements"
          editor-extension-mode="True">
     <ui:VisualElement class="ll-tab-root">
         <!-- Active Compilation Matrix -->
         <ui:VisualElement class="ll-card">
             <ui:Label text="Active Domain Compilation Status" class="ll-card-title" />
-            <ui:Label name="compiled-summary-label" text="" class="ll-card-subtitle" />
+            <ui:Label name="compiled-summary-label" class="ll-card-subtitle" />
             <ui:VisualElement name="compiled-level-strip" class="ll-level-strip" />
             <ui:Label text="Call sites below the compiled threshold (including argument evaluation) are omitted from IL via [Conditional]." class="ll-muted" />
         </ui:VisualElement>
@@ -29,7 +28,7 @@
                 <ui:Button name="select-all-targets-button" text="Select All" />
                 <ui:Button name="select-active-target-button" text="Active Only" />
             </ui:VisualElement>
-            <ui:Label name="apply-status-label" text="" class="ll-muted" style="margin-top: 6px;" />
+            <ui:Label name="apply-status-label" class="ll-muted" style="margin-top: 6px;" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -13,19 +13,19 @@ namespace LogLine.Config
         #region Fields
 
         [Tooltip("Include the UTC ISO-8601 'timestamp' field.")]
-        public bool IncludeTimestamp;
+        public bool includeTimestamp;
 
         [Tooltip("Include the severity 'level' field.")]
-        public bool IncludeLevel;
+        public bool includeLevel;
 
         [Tooltip("Include the category 'logger' field.")]
-        public bool IncludeLogger;
+        public bool includeLogger;
 
         [Tooltip("Include the originating managed 'threadId' field.")]
-        public bool IncludeThreadId;
+        public bool includeThreadId;
 
         [Tooltip("Include the 'exception' field when an exception is attached.")]
-        public bool IncludeException;
+        public bool includeException;
 
         #endregion
 
@@ -36,11 +36,11 @@ namespace LogLine.Config
         /// </summary>
         public static JsonLayoutConfig Default => new()
         {
-            IncludeTimestamp = true,
-            IncludeLevel = true,
-            IncludeLogger = true,
-            IncludeThreadId = true,
-            IncludeException = true
+            includeTimestamp = true,
+            includeLevel = true,
+            includeLogger = true,
+            includeThreadId = true,
+            includeException = true
         };
 
         /// <summary>
@@ -49,11 +49,11 @@ namespace LogLine.Config
         /// <param name="appendNewline">Whether to append a trailing newline delimiter for NDJSON output.</param>
         /// <returns>A configured <see cref="JsonLayout"/> instance.</returns>
         public JsonLayout Build(bool appendNewline = true) => new(
-            IncludeTimestamp,
-            IncludeLevel,
-            IncludeLogger,
-            IncludeThreadId,
-            IncludeException,
+            includeTimestamp,
+            includeLevel,
+            includeLogger,
+            includeThreadId,
+            includeException,
             appendNewline);
 
         /// <summary>
@@ -67,11 +67,11 @@ namespace LogLine.Config
                 return;
             }
 
-            layout.IncludeTimestamp = IncludeTimestamp;
-            layout.IncludeLevel = IncludeLevel;
-            layout.IncludeLogger = IncludeLogger;
-            layout.IncludeThreadId = IncludeThreadId;
-            layout.IncludeException = IncludeException;
+            layout.IncludeTimestamp = includeTimestamp;
+            layout.IncludeLevel = includeLevel;
+            layout.IncludeLogger = includeLogger;
+            layout.IncludeThreadId = includeThreadId;
+            layout.IncludeException = includeException;
         }
 
         #endregion

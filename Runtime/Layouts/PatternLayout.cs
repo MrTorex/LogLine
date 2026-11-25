@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using LogLine.Core;
 
 namespace LogLine.Layouts
@@ -318,7 +319,7 @@ namespace LogLine.Layouts
             public override bool TryConvert(in LogEvent logEvent, Span<char> destination, out int charsWritten)
             {
                 DateTime time = logEvent.TimestampUtc.ToLocalTime();
-                return time.TryFormat(destination, out charsWritten, _format);
+                return time.TryFormat(destination, out charsWritten, _format, CultureInfo.InvariantCulture);
             }
         }
 

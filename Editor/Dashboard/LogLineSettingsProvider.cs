@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine.UIElements;
 
 namespace LogLine.Editor.Dashboard
 {
@@ -13,7 +12,7 @@ namespace LogLine.Editor.Dashboard
 
         private const string SettingsPath = "Project/LogLine";
 
-        private static readonly string[] SearchKeywords =
+        private static readonly string[] _searchKeywords =
         {
             "LogLine",
             "Logging",
@@ -45,7 +44,7 @@ namespace LogLine.Editor.Dashboard
             return new SettingsProvider(SettingsPath, SettingsScope.Project)
             {
                 label = "LogLine",
-                keywords = new HashSet<string>(SearchKeywords),
+                keywords = new HashSet<string>(_searchKeywords),
                 activateHandler = (_, rootElement) =>
                 {
                     activeView?.Dispose();

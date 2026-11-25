@@ -23,7 +23,7 @@ namespace LogLine.Editor.Dashboard.Tabs
         private const double MinFileSizeMb = 0.01;
         private const int PreviewBufferSize = 2048;
 
-        private static readonly (string Token, string Tooltip)[] PatternTokens =
+        private static readonly (string Token, string Tooltip)[] _patternTokens =
         {
             ("%d{HH:mm:ss.fff}", "Local timestamp with custom format"),
             ("%p", "Severity level (TRACE..FATAL)"),
@@ -34,7 +34,7 @@ namespace LogLine.Editor.Dashboard.Tabs
             ("%n", "Newline delimiter")
         };
 
-        private static readonly (string Macro, string Tooltip)[] PathMacros =
+        private static readonly (string Macro, string Tooltip)[] _pathMacros =
         {
             ("{persistentDataPath}", "Application.persistentDataPath"),
             ("{projectPath}", "Project root in Editor / executable folder in Standalone"),
@@ -90,7 +90,7 @@ namespace LogLine.Editor.Dashboard.Tabs
         /// </summary>
         public SinksTabView()
         {
-            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+            VisualTreeAsset tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
             if (tree != null)
             {
                 Root = tree.Instantiate();
@@ -134,7 +134,7 @@ namespace LogLine.Editor.Dashboard.Tabs
             _consolePreviewExToggle?.RegisterValueChangedCallback(_ => RefreshConsolePreview());
             _filePreviewExToggle?.RegisterValueChangedCallback(_ => RefreshFilePreview());
 
-            var maxSizeHost = Root.Q<VisualElement>("max-size-mb-host");
+            VisualElement maxSizeHost = Root.Q<VisualElement>("max-size-mb-host");
             _maxFileSizeMbField = new DoubleField("Max File Size (MB)")
             {
                 tooltip = "Maximum file size in megabytes before rotation occurs. Stored in bytes as maxFileSizeBytes."
@@ -142,9 +142,9 @@ namespace LogLine.Editor.Dashboard.Tabs
             _maxFileSizeMbField.RegisterValueChangedCallback(OnMaxFileSizeMbChanged);
             maxSizeHost?.Add(_maxFileSizeMbField);
 
-            PopulateTokenStrip(Root.Q<VisualElement>("console-token-strip"), PatternTokens, "consolePattern");
-            PopulateTokenStrip(Root.Q<VisualElement>("file-token-strip"), PatternTokens, "filePattern");
-            PopulateTokenStrip(Root.Q<VisualElement>("file-macro-strip"), PathMacros, "filePath");
+            PopulateTokenStrip(Root.Q<VisualElement>("console-token-strip"), _patternTokens, "consolePattern");
+            PopulateTokenStrip(Root.Q<VisualElement>("file-token-strip"), _patternTokens, "filePattern");
+            PopulateTokenStrip(Root.Q<VisualElement>("file-macro-strip"), _pathMacros, "filePath");
         }
 
         #endregion
@@ -178,11 +178,11 @@ namespace LogLine.Editor.Dashboard.Tabs
 
             _consoleFilterPrefixesField?.EnableInClassList(
                 "ll-hidden",
-                settings.consoleCategoryFilter.Mode == CategoryFilterMode.None);
+                settings.consoleCategoryFilter.mode == CategoryFilterMode.None);
 
             _fileFilterPrefixesField?.EnableInClassList(
                 "ll-hidden",
-                settings.fileCategoryFilter.Mode == CategoryFilterMode.None);
+                settings.fileCategoryFilter.mode == CategoryFilterMode.None);
 
             bool isJsonLayout = settings.fileLayoutType == LogLayoutType.Json;
             _filePatternSection?.EnableInClassList("ll-hidden", isJsonLayout);
@@ -266,8 +266,8 @@ namespace LogLine.Editor.Dashboard.Tabs
                 ? PatternLayout.DefaultConsolePattern
                 : settings.consolePattern;
 
-            bool includeException = _consolePreviewExToggle != null && _consolePreviewExToggle.value;
-            var sampleEvent = CreateSampleEvent(includeException);
+            bool includeException = _consolePreviewExToggle is { value: true };
+            LogEvent sampleEvent = CreateSampleEvent(includeException);
 
             try
             {
@@ -290,8 +290,8 @@ namespace LogLine.Editor.Dashboard.Tabs
                 return;
             }
 
-            bool includeException = _filePreviewExToggle != null && _filePreviewExToggle.value;
-            var sampleEvent = CreateSampleEvent(includeException);
+            bool includeException = _filePreviewExToggle is { value: true };
+            LogEvent sampleEvent = CreateSampleEvent(includeException);
 
             try
             {
@@ -395,12 +395,7 @@ namespace LogLine.Editor.Dashboard.Tabs
         private static string FormatPreview(ILogLayout layout, in LogEvent sampleEvent)
         {
             Span<char> buffer = stackalloc char[PreviewBufferSize];
-            if (layout.TryFormat(in sampleEvent, buffer, out int written))
-            {
-                return buffer[..written].ToString();
-            }
-
-            return "(preview output exceeds 2048 characters)";
+            return layout.TryFormat(in sampleEvent, buffer, out int written) ? buffer[..written].ToString() : "(preview output exceeds 2048 characters)";
         }
 
         #endregion

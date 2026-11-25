@@ -79,7 +79,7 @@ namespace LogLine.Core
         public static Logger GetLogger(string category)
         {
             string key = string.IsNullOrEmpty(category) ? "Global" : category;
-            return _loggers.GetOrAdd(key, static (name) =>
+            return _loggers.GetOrAdd(key, static name =>
             {
                 Func<string, LogLevel> resolver = _categoryLevelResolver;
                 LogLevel initialLevel = resolver?.Invoke(name) ?? GlobalMinimumLevel;

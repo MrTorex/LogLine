@@ -18,7 +18,7 @@ namespace LogLine.Editor.Dashboard.Tabs
 
         private const string UxmlPath = "Packages/com.mrtorex.logline/Editor/UI/CompilationTab.uxml";
 
-        private static readonly LogLevel[] SeverityLevels =
+        private static readonly LogLevel[] _severityLevels =
         {
             LogLevel.Trace,
             LogLevel.Debug,
@@ -34,7 +34,6 @@ namespace LogLine.Editor.Dashboard.Tabs
 
         private readonly Label _compiledSummaryLabel;
         private readonly VisualElement _compiledLevelStrip;
-        private readonly EnumField _thresholdField;
         private readonly VisualElement _noneWarningBox;
         private readonly VisualElement _platformsContainer;
         private readonly Button _applyButton;
@@ -69,7 +68,7 @@ namespace LogLine.Editor.Dashboard.Tabs
         /// </summary>
         public CompilationTabView()
         {
-            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+            VisualTreeAsset tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
             if (tree != null)
             {
                 Root = tree.Instantiate();
@@ -93,15 +92,15 @@ namespace LogLine.Editor.Dashboard.Tabs
                 ? current
                 : LogLevel.Trace;
 
-            var thresholdHost = Root.Q<VisualElement>("threshold-field-host");
-            _thresholdField = new EnumField("Compile Threshold", _selectedThreshold);
-            _thresholdField.RegisterValueChangedCallback(evt =>
+            VisualElement thresholdHost = Root.Q<VisualElement>("threshold-field-host");
+            var thresholdField = new EnumField("Compile Threshold", _selectedThreshold);
+            thresholdField.RegisterValueChangedCallback(evt =>
             {
                 _selectedThreshold = (LogLevel)evt.newValue;
                 UpdateNoneWarning();
                 _applyStatusLabel.text = string.Empty;
             });
-            thresholdHost?.Add(_thresholdField);
+            thresholdHost?.Add(thresholdField);
 
             BuildPlatformRows();
 
@@ -195,9 +194,9 @@ namespace LogLine.Editor.Dashboard.Tabs
             _compiledSummaryLabel.text = $"Current AppDomain compiled with {symbol} (minimum severity: {compiled}).";
 
             _compiledLevelStrip.Clear();
-            for (int i = 0; i < SeverityLevels.Length; i++)
+            for (int i = 0; i < _severityLevels.Length; i++)
             {
-                LogLevel level = SeverityLevels[i];
+                LogLevel level = _severityLevels[i];
                 bool isCompiled = level >= compiled;
 
                 var chip = new Label(level.ToString().ToUpperInvariant());
@@ -240,15 +239,7 @@ namespace LogLine.Editor.Dashboard.Tabs
             }
         }
 
-        private void UpdateNoneWarning()
-        {
-            if (_noneWarningBox == null)
-            {
-                return;
-            }
-
-            _noneWarningBox.EnableInClassList("ll-hidden", _selectedThreshold != LogLevel.None);
-        }
+        private void UpdateNoneWarning() => _noneWarningBox?.EnableInClassList("ll-hidden", _selectedThreshold != LogLevel.None);
 
         private void UpdateApplyButtonEnabled()
         {

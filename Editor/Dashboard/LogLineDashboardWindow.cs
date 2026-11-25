@@ -28,10 +28,7 @@ namespace LogLine.Editor.Dashboard
         /// Opens or focuses the LogLine Dashboard window.
         /// </summary>
         [MenuItem(MenuPath, priority = 100)]
-        public static void ShowWindow()
-        {
-            Open(null);
-        }
+        public static void ShowWindow() => Open(null);
 
         /// <summary>
         /// Opens or focuses the LogLine Dashboard window and selects an optional tab.
@@ -39,7 +36,7 @@ namespace LogLine.Editor.Dashboard
         /// <param name="tabId">Optional tab identifier (e.g. "global", "sinks", "categories", "compilation").</param>
         public static void Open(string tabId)
         {
-            var window = GetWindow<LogLineDashboardWindow>(WindowTitle);
+            LogLineDashboardWindow window = GetWindow<LogLineDashboardWindow>(WindowTitle);
             window.minSize = new Vector2(640f, 420f);
             window.Show();
 
@@ -60,10 +57,7 @@ namespace LogLine.Editor.Dashboard
             rootVisualElement.Add(_dashboardView);
         }
 
-        private void OnFocus()
-        {
-            _dashboardView?.ReloadSettingsAsset();
-        }
+        private void OnFocus() => _dashboardView?.ReloadSettingsAsset();
 
         private void OnDestroy()
         {

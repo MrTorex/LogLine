@@ -68,13 +68,13 @@ namespace LogLine.Editor.Dashboard
         {
             style.flexGrow = 1;
 
-            var uss = AssetDatabase.LoadAssetAtPath<StyleSheet>(UssPath);
+            StyleSheet uss = AssetDatabase.LoadAssetAtPath<StyleSheet>(UssPath);
             if (uss != null)
             {
                 styleSheets.Add(uss);
             }
 
-            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+            VisualTreeAsset tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
             if (tree == null)
             {
                 Add(new HelpBox($"Missing dashboard UXML asset: {UxmlPath}", HelpBoxMessageType.Error));

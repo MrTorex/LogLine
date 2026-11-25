@@ -14,8 +14,8 @@ namespace LogLine.Editor.Dashboard
     {
         #region Constants
 
-        public const string DefaultResourcesFolder = "Assets/Resources";
-        public const string DefaultAssetPath = "Assets/Resources/LogLineSettings.asset";
+        private const string DefaultResourcesFolder = "Assets/Resources";
+        private const string DefaultAssetPath = "Assets/Resources/LogLineSettings.asset";
         private const string ExpectedAssetFileName = "LogLineSettings.asset";
 
         #endregion

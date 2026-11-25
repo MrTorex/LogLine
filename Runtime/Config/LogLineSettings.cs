@@ -39,8 +39,8 @@ namespace LogLine.Config
 
         public CategoryFilterConfig consoleCategoryFilter = new()
         {
-            Mode = CategoryFilterMode.None,
-            Prefixes = new List<string>()
+            mode = CategoryFilterMode.None,
+            prefixes = new List<string>()
         };
 
         #endregion
@@ -68,8 +68,8 @@ namespace LogLine.Config
 
         public CategoryFilterConfig fileCategoryFilter = new()
         {
-            Mode = CategoryFilterMode.None,
-            Prefixes = new List<string>()
+            mode = CategoryFilterMode.None,
+            prefixes = new List<string>()
         };
 
         #endregion
@@ -100,17 +100,17 @@ namespace LogLine.Config
                 for (int i = 0; i < categoryRules.Count; i++)
                 {
                     CategoryRule rule = categoryRules[i];
-                    if (string.IsNullOrEmpty(rule.CategoryPrefix))
+                    if (string.IsNullOrEmpty(rule.categoryPrefix))
                     {
                         continue;
                     }
 
-                    int prefixLength = rule.CategoryPrefix.Length;
+                    int prefixLength = rule.categoryPrefix.Length;
                     if (prefixLength > bestMatchLength &&
-                        category.StartsWith(rule.CategoryPrefix, StringComparison.OrdinalIgnoreCase))
+                        category.StartsWith(rule.categoryPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         bestMatchLength = prefixLength;
-                        resolvedLevel = rule.MinimumLevel;
+                        resolvedLevel = rule.minimumLevel;
                     }
                 }
 
