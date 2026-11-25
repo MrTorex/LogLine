@@ -18,6 +18,13 @@
   "author": {
     "name": "Alaksiej Cevialuk (MrTorex)",
     "url": "https://github.com/MrTorex",
-    "email": "work.browbeat006@passinbox.com"
-  }
+    "email": "thehardworker@posteo.com"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Usage",
+      "description": "Interactive scene demonstrating category loggers, zero-boxing generic formatting, custom LogSinkBase overlays, and programmatic JSON file routing.",
+      "path": "Samples~/BasicUsage"
+    }
+  ]
 }
