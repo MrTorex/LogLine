@@ -1,3 +1,10 @@
 {
-  "name": "LogLine.Runtime.Tests"
+  "name": "LogLine.Runtime.Tests",
+  "rootNamespace": "LogLine",
+  "references": ["GUID:27619889b8ba8c24980f49ee34dbb44a", "GUID:0acc523941302664db1f4e527237feb3", "GUID:a87e662fb5bf45aeb8feb44c1c27de90"],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "includePlatforms": []
 }

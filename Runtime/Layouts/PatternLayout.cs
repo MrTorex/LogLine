@@ -309,18 +309,228 @@ namespace LogLine.Layouts
 
         private sealed class CustomDateConverter : PatternConverter
         {
+            private enum DateTokenKind : byte
+            {
+                Literal,
+                Year4,
+                Year2,
+                Month2,
+                Month1,
+                Day2,
+                Day1,
+                Hour2,
+                Hour1,
+                Minute2,
+                Minute1,
+                Second2,
+                Second1,
+                Millis3,
+                Millis2,
+                Millis1
+            }
+
+            private readonly struct DateToken
+            {
+                public readonly DateTokenKind Kind;
+                public readonly int Start;
+                public readonly int Length;
+
+                public DateToken(DateTokenKind kind, int start = 0, int length = 0)
+                {
+                    Kind = kind;
+                    Start = start;
+                    Length = length;
+                }
+            }
+
             private readonly string _format;
+            private readonly DateToken[] _fastTokens;
 
             public CustomDateConverter(string format)
             {
                 _format = format;
+                _fastTokens = TryCompileFastTokens(format);
             }
 
             public override bool TryConvert(in LogEvent logEvent, Span<char> destination, out int charsWritten)
             {
                 DateTime time = logEvent.TimestampUtc.ToLocalTime();
-                return time.TryFormat(destination, out charsWritten, _format, CultureInfo.InvariantCulture);
+
+                if (_fastTokens == null)
+                {
+                    return time.TryFormat(destination, out charsWritten, _format, CultureInfo.InvariantCulture);
+                }
+
+                int pos = 0;
+                for (int i = 0; i < _fastTokens.Length; i++)
+                {
+                    DateToken token = _fastTokens[i];
+                    bool ok = token.Kind switch
+                    {
+                        DateTokenKind.Literal => TryWriteLiteral(token.Start, token.Length, destination, ref pos),
+                        DateTokenKind.Year4 => TryWrite4Digits(time.Year, destination, ref pos),
+                        DateTokenKind.Year2 => TryWrite2Digits(time.Year % 100, destination, ref pos),
+                        DateTokenKind.Month2 => TryWrite2Digits(time.Month, destination, ref pos),
+                        DateTokenKind.Month1 => TryWrite1Or2Digits(time.Month, destination, ref pos),
+                        DateTokenKind.Day2 => TryWrite2Digits(time.Day, destination, ref pos),
+                        DateTokenKind.Day1 => TryWrite1Or2Digits(time.Day, destination, ref pos),
+                        DateTokenKind.Hour2 => TryWrite2Digits(time.Hour, destination, ref pos),
+                        DateTokenKind.Hour1 => TryWrite1Or2Digits(time.Hour, destination, ref pos),
+                        DateTokenKind.Minute2 => TryWrite2Digits(time.Minute, destination, ref pos),
+                        DateTokenKind.Minute1 => TryWrite1Or2Digits(time.Minute, destination, ref pos),
+                        DateTokenKind.Second2 => TryWrite2Digits(time.Second, destination, ref pos),
+                        DateTokenKind.Second1 => TryWrite1Or2Digits(time.Second, destination, ref pos),
+                        DateTokenKind.Millis3 => TryWrite3Digits(time.Millisecond, destination, ref pos),
+                        DateTokenKind.Millis2 => TryWrite2Digits(time.Millisecond / 10, destination, ref pos),
+                        DateTokenKind.Millis1 => TryWrite1Digit(time.Millisecond / 100, destination, ref pos),
+                        _ => false
+                    };
+
+                    if (!ok)
+                    {
+                        charsWritten = 0;
+                        return false;
+                    }
+                }
+
+                charsWritten = pos;
+                return true;
             }
+
+            private bool TryWriteLiteral(int start, int length, Span<char> dst, ref int pos)
+            {
+                if (pos + length > dst.Length)
+                {
+                    return false;
+                }
+
+                _format.AsSpan(start, length).CopyTo(dst[pos..]);
+                pos += length;
+                return true;
+            }
+
+            private static bool TryWrite4Digits(int value, Span<char> dst, ref int pos)
+            {
+                if (pos + 4 > dst.Length)
+                {
+                    return false;
+                }
+
+                dst[pos] = (char)('0' + (value / 1000) % 10);
+                dst[pos + 1] = (char)('0' + (value / 100) % 10);
+                dst[pos + 2] = (char)('0' + (value / 10) % 10);
+                dst[pos + 3] = (char)('0' + value % 10);
+                pos += 4;
+                return true;
+            }
+
+            private static bool TryWrite3Digits(int value, Span<char> dst, ref int pos)
+            {
+                if (pos + 3 > dst.Length)
+                {
+                    return false;
+                }
+
+                dst[pos] = (char)('0' + (value / 100) % 10);
+                dst[pos + 1] = (char)('0' + (value / 10) % 10);
+                dst[pos + 2] = (char)('0' + value % 10);
+                pos += 3;
+                return true;
+            }
+
+            private static bool TryWrite2Digits(int value, Span<char> dst, ref int pos)
+            {
+                if (pos + 2 > dst.Length)
+                {
+                    return false;
+                }
+
+                dst[pos] = (char)('0' + (value / 10) % 10);
+                dst[pos + 1] = (char)('0' + value % 10);
+                pos += 2;
+                return true;
+            }
+
+            private static bool TryWrite1Or2Digits(int value, Span<char> dst, ref int pos) => value >= 10 ? TryWrite2Digits(value, dst, ref pos) : TryWrite1Digit(value, dst, ref pos);
+
+            private static bool TryWrite1Digit(int value, Span<char> dst, ref int pos)
+            {
+                if (pos + 1 > dst.Length)
+                {
+                    return false;
+                }
+
+                dst[pos++] = (char)('0' + value % 10);
+                return true;
+            }
+
+            private static DateToken[] TryCompileFastTokens(string format)
+            {
+                // Single-character strings are standard .NET format specifiers (e.g. "O", "s", "T")
+                if (string.IsNullOrEmpty(format) || format.Length == 1)
+                {
+                    return null;
+                }
+
+                var tokens = new List<DateToken>(16);
+                int i = 0;
+
+                while (i < format.Length)
+                {
+                    char c = format[i];
+                    if (IsDateSpecifierOrEscape(c))
+                    {
+                        int run = 1;
+                        while (i + run < format.Length && format[i + run] == c)
+                        {
+                            run++;
+                        }
+
+                        DateTokenKind? kind = (c, run) switch
+                        {
+                            ('y', 4) => DateTokenKind.Year4,
+                            ('y', 2) => DateTokenKind.Year2,
+                            ('M', 2) => DateTokenKind.Month2,
+                            ('M', 1) => DateTokenKind.Month1,
+                            ('d', 2) => DateTokenKind.Day2,
+                            ('d', 1) => DateTokenKind.Day1,
+                            ('H', 2) => DateTokenKind.Hour2,
+                            ('H', 1) => DateTokenKind.Hour1,
+                            ('m', 2) => DateTokenKind.Minute2,
+                            ('m', 1) => DateTokenKind.Minute1,
+                            ('s', 2) => DateTokenKind.Second2,
+                            ('s', 1) => DateTokenKind.Second1,
+                            ('f', 3) => DateTokenKind.Millis3,
+                            ('f', 2) => DateTokenKind.Millis2,
+                            ('f', 1) => DateTokenKind.Millis1,
+                            _ => null
+                        };
+
+                        if (!kind.HasValue)
+                        {
+                            return null;
+                        }
+
+                        tokens.Add(new DateToken(kind.Value));
+                        i += run;
+                    }
+                    else
+                    {
+                        int literalStart = i;
+                        while (i < format.Length && !IsDateSpecifierOrEscape(format[i]))
+                        {
+                            i++;
+                        }
+
+                        tokens.Add(new DateToken(DateTokenKind.Literal, literalStart, i - literalStart));
+                    }
+                }
+
+                return tokens.ToArray();
+            }
+
+            private static bool IsDateSpecifierOrEscape(char c) =>
+                c is 'y' or 'M' or 'd' or 'H' or 'h' or 'm' or 's' or 'f' or 'F' or 't' or 'z' or 'K' or 'g' or '\\' or '\'' or '"' or '%';
         }
 
         #endregion
