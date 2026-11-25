@@ -1,0 +1,16 @@
+{
+  "name": "LogLine.Samples.BasicUsage",
+  "rootNamespace": "LogLine.Samples.BasicUsage",
+  "references": [
+    "GUID:a87e662fb5bf45aeb8feb44c1c27de90"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

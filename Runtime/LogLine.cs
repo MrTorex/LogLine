@@ -37,7 +37,7 @@ namespace LogLine
         /// <summary>
         /// Gets a value indicating whether native Unity log interception is currently active.
         /// </summary>
-        internal static bool IsInterceptorActive => _interceptor != null;
+        public static bool IsInterceptorActive => _interceptor != null;
 
         #endregion
 

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none">
+
+  <g fill="#10B981">
+
+    <path d="M 30 26 H 41 V 61 H 60 V 71 H 30 Z" />
+
+    <path d="M 68 26 H 79 V 61 H 98 V 71 H 68 Z" />
+  </g>
+
+
+  <g transform="translate(0, 88)" fill="#10B981">
+    <polygon points="16,5 26,5 23,11 13,11" fill-opacity="0.4" />
+    <polygon points="31,5 46,5 43,11 28,11" fill-opacity="0.75" />
+    <polygon points="51,5 94,5 97,0 115,8 91,16 93,11 48,11" />
+  </g>
+</svg>

@@ -13,6 +13,7 @@ namespace LogLine.Editor.Dashboard
 
         private const string MenuPath = "Tools/LogLine/Dashboard";
         private const string WindowTitle = "LogLine Dashboard";
+        private const string IconAssetPath = "Packages/com.mrtorex.logline/icon.png";
 
         #endregion
 
@@ -52,6 +53,8 @@ namespace LogLine.Editor.Dashboard
 
         private void CreateGUI()
         {
+            ApplyWindowTitle();
+
             rootVisualElement.Clear();
             _dashboardView = new LogLineDashboardView();
             rootVisualElement.Add(_dashboardView);
@@ -63,6 +66,18 @@ namespace LogLine.Editor.Dashboard
         {
             _dashboardView?.Dispose();
             _dashboardView = null;
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private void ApplyWindowTitle()
+        {
+            Texture2D icon = AssetDatabase.LoadAssetAtPath<Texture2D>(IconAssetPath);
+            titleContent = icon != null
+                ? new GUIContent(WindowTitle, icon)
+                : new GUIContent(WindowTitle);
         }
 
         #endregion
