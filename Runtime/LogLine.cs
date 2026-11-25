@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.IO;
 using LogLine.Config;
 using LogLine.Core;
 using LogLine.Interceptors;
@@ -115,11 +114,19 @@ namespace LogLine
 
                     if (settings.enableFileLogging)
                     {
-                        string filePattern = string.IsNullOrEmpty(settings.filePattern)
-                            ? PatternLayout.DefaultFilePattern
-                            : settings.filePattern;
+                        ILogLayout fileLayout;
+                        if (settings.fileLayoutType == LogLayoutType.Json)
+                        {
+                            fileLayout = new JsonLayout(appendNewline: true);
+                        }
+                        else
+                        {
+                            string filePattern = string.IsNullOrEmpty(settings.filePattern)
+                                ? PatternLayout.DefaultFilePattern
+                                : settings.filePattern;
 
-                        var fileLayout = new PatternLayout(filePattern, useColorTags: false);
+                            fileLayout = new PatternLayout(filePattern, useColorTags: false);
+                        }
 
                         try
                         {

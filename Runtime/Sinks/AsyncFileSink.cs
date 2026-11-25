@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -37,6 +38,8 @@ namespace LogLine.Sinks
         private StreamWriter _writer;
         private volatile bool _isRunning = true;
         private int _lastLoggedDroppedCount;
+        private bool _hasUnflushedData;
+        private long _lastFlushTimestamp;
 
         #endregion
 
@@ -140,21 +143,22 @@ namespace LogLine.Sinks
         private void WorkerLoop()
         {
             Span<char> formatBuffer = stackalloc char[FormatStackBufferSize];
+            long flushIntervalTicks = (long)(Stopwatch.Frequency * (FlushIntervalMs / 1000.0));
+            _lastFlushTimestamp = Stopwatch.GetTimestamp();
 
             while (_isRunning)
             {
-                _signal.WaitOne(FlushIntervalMs);
-                DrainQueue(formatBuffer);
+                bool signaled = _signal.WaitOne(FlushIntervalMs);
+                DrainQueue(formatBuffer, flushIntervalTicks, timedOut: !signaled);
             }
 
-            DrainQueue(formatBuffer);
+            DrainQueue(formatBuffer, flushIntervalTicks, timedOut: true);
         }
 
-        private void DrainQueue(Span<char> formatBuffer)
+        private void DrainQueue(Span<char> formatBuffer, long flushIntervalTicks, bool timedOut)
         {
             if (_writer == null) return;
 
-            bool hasEntries = false;
             bool forceFlush = false;
 
             int currentDropped = _ringBuffer.DroppedCount;
@@ -162,15 +166,22 @@ namespace LogLine.Sinks
             {
                 int delta = currentDropped - _lastLoggedDroppedCount;
                 _lastLoggedDroppedCount = currentDropped;
-                _writer.WriteLine($"[WARN] LogLine: Dropped {delta} log events due to internal ring buffer overflow!");
-                hasEntries = true;
+
+                var droppedEvent = new LogEvent(
+                    LogLevel.Warn,
+                    "LogLine",
+                    $"Dropped {delta} log events due to internal ring buffer overflow.");
+
+                CheckFileRotation();
+                WriteLogEvent(ref formatBuffer, in droppedEvent);
+                _hasUnflushedData = true;
             }
 
             while (_ringBuffer.TryDequeue(out LogEvent logEvent))
             {
-                hasEntries = true;
                 CheckFileRotation();
                 WriteLogEvent(ref formatBuffer, in logEvent);
+                _hasUnflushedData = true;
 
                 if (logEvent.Level >= LogLevel.Error)
                 {
@@ -178,9 +189,15 @@ namespace LogLine.Sinks
                 }
             }
 
-            if (hasEntries && forceFlush)
+            if (_hasUnflushedData)
             {
-                _writer.Flush();
+                long now = Stopwatch.GetTimestamp();
+                if (forceFlush || timedOut || now - _lastFlushTimestamp >= flushIntervalTicks)
+                {
+                    _writer.Flush();
+                    _hasUnflushedData = false;
+                    _lastFlushTimestamp = now;
+                }
             }
         }
 
